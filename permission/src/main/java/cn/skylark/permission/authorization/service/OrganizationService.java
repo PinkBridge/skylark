@@ -18,6 +18,7 @@ import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -63,11 +64,28 @@ public class OrganizationService {
     if (organization.getTenantId() == null) {
       organization.setTenantId(TenantContext.getTenantId());
     }
+    if (!StringUtils.hasText(organization.getCode())) {
+      organization.setCode(generateOrganizationCode(organization.getTenantId()));
+    }
     return organizationMapper.insert(organization);
   }
 
   public int update(SysOrganization organization) {
     return organizationMapper.update(organization);
+  }
+
+  private String generateOrganizationCode(Long tenantId) {
+    String tenantPart = tenantId == null ? "0" : String.valueOf(tenantId);
+    // ORG_<tenant>_<8hex> keeps length small (< 50) and uniqueness high.
+    for (int i = 0; i < 5; i++) {
+      String rand = UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+      String code = "ORG_" + tenantPart + "_" + rand;
+      if (organizationMapper.selectByCode(code) == null) {
+        return code;
+      }
+    }
+    // fallback: extremely unlikely to collide, but keep it deterministic enough
+    return "ORG_" + tenantPart + "_" + System.currentTimeMillis();
   }
 
   public int delete(Long id) {

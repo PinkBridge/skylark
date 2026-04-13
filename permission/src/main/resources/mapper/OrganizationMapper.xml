@@ -151,7 +151,6 @@
     <update id="updateOrganizationInfo">
         UPDATE sys_organization
         SET name = #{organization.name},
-            code = #{organization.code},
             parent_id = #{organization.parentId},
             type = #{organization.type},
             level = #{organization.level},

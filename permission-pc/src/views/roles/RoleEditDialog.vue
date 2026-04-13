@@ -2,9 +2,6 @@
   <el-dialog :model-value="visible" :title="t('EditTitle')" align-center destroy-on-close :modal="false"
     modal-penetrable :show-close="false" style="max-width: 600px">
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
-      <el-form-item :label="t('IDLabel')" prop="id">
-        <el-input v-model="form.id" :disabled="true" />
-      </el-form-item>
       <el-form-item :label="t('NameLabel')" prop="name">
         <el-input v-model="form.name" :placeholder="t('NameLabel')" />
       </el-form-item>

@@ -1,6 +1,13 @@
 <template>
-  <el-tree-select v-model="innerValue" :data="data" :render-after-expand="false" 
-  @update:model-value="handleChange" check-strictly="true" :placeholder="placeholder"/>
+  <el-tree-select
+    v-model="innerValue"
+    :data="data"
+    :render-after-expand="false"
+    clearable
+    @update:model-value="handleChange"
+    check-strictly="true"
+    :placeholder="placeholder"
+  />
 </template>
 
 <script setup name="OrgSelect">

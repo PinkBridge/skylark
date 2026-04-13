@@ -2,7 +2,6 @@
   <el-dialog :model-value="visible" :title="t('DetailTitle')" align-center destroy-on-close :modal="false"
     modal-penetrable :show-close="false">
     <el-descriptions border>
-      <el-descriptions-item :label="t('IDLabel')">{{ roleInfo.id }}</el-descriptions-item>
       <el-descriptions-item :label="t('NameLabel')">{{ roleInfo.name }}</el-descriptions-item>
       <el-descriptions-item :label="t('TenantNameLabel')">{{ roleInfo.tenantName || '-' }}</el-descriptions-item>
       <el-descriptions-item :label="t('RemarkLabel')">{{ roleInfo.remark }}</el-descriptions-item>

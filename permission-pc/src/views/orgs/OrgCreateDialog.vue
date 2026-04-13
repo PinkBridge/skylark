@@ -5,9 +5,6 @@
       <el-form-item :label="t('NameLabel')" prop="name">
         <el-input v-model="form.name" :placeholder="t('NameLabel')" />
       </el-form-item>
-      <el-form-item :label="t('CodeLabel')" prop="code">
-        <el-input v-model="form.code" :placeholder="t('CodeLabel')" />
-      </el-form-item>
       <el-form-item :label="t('ParentOrganizationLabel')" prop="parentId">
         <OrgSelect v-model="form.parentId" :placeholder="t('ParentOrganizationLabel')" />
       </el-form-item>
@@ -48,7 +45,6 @@ const props = defineProps(['visible', 'onSubmit', 'onCancel'])
 const formRef = ref(null)
 const form = ref({
   name: '',
-  code: '',
   parentId: '',
   type: '',
   status: 'ACTIVE',
@@ -58,9 +54,6 @@ const rules = computed(() => {
   return {
     name: [
       { required: true, message: t('NameRequired'), trigger: 'blur' }
-    ],
-    code: [
-      { required: true, message: t('CodeRequired'), trigger: 'blur' }
     ],
     type: [
       { required: true, message: t('TypeRequired'), trigger: 'change' }
@@ -77,7 +70,6 @@ const onCancel = () => {
   }
   form.value = {
     name: '',
-    code: '',
     parentId: '',
     type: '',
     status: 'ACTIVE',
@@ -92,7 +84,6 @@ const onSubmit = async () => {
     await formRef.value.validate()
     const org = {
       name: form.value.name,
-      code: form.value.code,
       parentId: form.value.parentId || '',
       type: form.value.type,
       status: form.value.status,

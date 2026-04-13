@@ -8,6 +8,13 @@
       <el-form-item :label="t('SystemNameLabel')" prop="systemName">
         <el-input v-model="form.systemName" :placeholder="t('SystemNameLabel')" />
       </el-form-item>
+      <el-form-item :label="t('DomainLabel')" prop="domain">
+        <el-input v-model="form.domain" :placeholder="t('DomainLabel')" />
+      </el-form-item>
+      <el-form-item :label="t('LogoLabel')" prop="logo">
+        <ResourceUpload :fileList="form.logo" :onSuccess="handleUploadSuccess" />
+        <div class="upload-tip">{{ t('UploadTip') }}</div>
+      </el-form-item>
       <el-form-item :label="t('ContactNameLabel')" prop="contactName">
         <el-input v-model="form.contactName" :placeholder="t('ContactNameLabel')" />
       </el-form-item>
@@ -17,15 +24,8 @@
       <el-form-item :label="t('ContactEmailLabel')" prop="contactEmail">
         <el-input v-model="form.contactEmail" :placeholder="t('ContactEmailLabel')" />
       </el-form-item>
-      <el-form-item :label="t('DomainLabel')" prop="domain">
-        <el-input v-model="form.domain" :placeholder="t('DomainLabel')" />
-      </el-form-item>
       <el-form-item :label="t('AddressLabel')" prop="address">
         <el-input v-model="form.address" type="textarea" :rows="2" :placeholder="t('AddressLabel')" />
-      </el-form-item>
-      <el-form-item :label="t('LogoLabel')" prop="logo">
-        <ResourceUpload :fileList="form.logo" :onSuccess="handleUploadSuccess" />
-        <div class="upload-tip">{{ t('UploadTip') }}</div>
       </el-form-item>
       <el-form-item :label="t('StatusLabel')" prop="status">
         <el-select v-model="form.status" :placeholder="t('StatusLabel')">

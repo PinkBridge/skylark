@@ -10,6 +10,7 @@ Desktop.ini
 # Logs
 *.log
 logs/
+help/
 
 # IntelliJ / JetBrains
 .idea/
