@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.skylark.permission.authorization.mapper.DataDomainMapper">
+
+    <resultMap id="BaseResultMap" type="cn.skylark.permission.authorization.entity.SysDataDomain">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="code" property="code" jdbcType="VARCHAR"/>
+        <result column="type" property="type" jdbcType="VARCHAR"/>
+        <result column="scope_value" property="scopeValue" jdbcType="VARCHAR"/>
+        <result column="custom_sql" property="customSql" jdbcType="VARCHAR"/>
+        <result column="description" property="description" jdbcType="VARCHAR"/>
+        <result column="tenant_id" property="tenantId" jdbcType="BIGINT"/>
+        <result column="enabled" property="enabled" jdbcType="TINYINT"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, name, code, type, scope_value, custom_sql, description, tenant_id, enabled, create_time, update_time
+    </sql>
+
+    <select id="selectById" parameterType="long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_data_domain
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_data_domain
+        ORDER BY create_time DESC
+    </select>
+
+    <insert id="insert" parameterType="cn.skylark.permission.authorization.entity.SysDataDomain" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_data_domain(name, code, type, scope_value, custom_sql, description, tenant_id, enabled)
+        VALUES (#{name}, #{code}, #{type}, #{scopeValue}, #{customSql}, #{description}, #{tenantId}, COALESCE(#{enabled}, 1))
+    </insert>
+
+    <update id="update" parameterType="cn.skylark.permission.authorization.entity.SysDataDomain">
+        UPDATE sys_data_domain
+        SET name = #{name},
+            code = #{code},
+            type = #{type},
+            scope_value = #{scopeValue},
+            custom_sql = #{customSql},
+            description = #{description},
+            tenant_id = #{tenantId},
+            enabled = #{enabled}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM sys_data_domain
+        WHERE id = #{id}
+    </delete>
+
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_data_domain
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectPageWithCondition" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_data_domain
+        <where>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="code != null and code != ''">
+                AND code LIKE CONCAT('%', #{code}, '%')
+            </if>
+            <if test="type != null and type != ''">
+                AND type = #{type}
+            </if>
+            <if test="enabled != null">
+                AND enabled = #{enabled}
+            </if>
+            <if test="createTime != null">
+                AND create_time &lt;= #{createTime}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*)
+        FROM sys_data_domain
+    </select>
+
+    <select id="countWithCondition" resultType="long">
+        SELECT COUNT(*)
+        FROM sys_data_domain
+        <where>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="code != null and code != ''">
+                AND code LIKE CONCAT('%', #{code}, '%')
+            </if>
+            <if test="type != null and type != ''">
+                AND type = #{type}
+            </if>
+            <if test="enabled != null">
+                AND enabled = #{enabled}
+            </if>
+            <if test="createTime != null">
+                AND create_time &lt;= #{createTime}
+            </if>
+        </where>
+    </select>
+
+    <update id="updateDataDomainInfo">
+        UPDATE sys_data_domain
+        SET name = #{dataDomain.name},
+            code = #{dataDomain.code},
+            type = #{dataDomain.type},
+            scope_value = #{dataDomain.scopeValue},
+            custom_sql = #{dataDomain.customSql},
+            description = #{dataDomain.description},
+            enabled = #{dataDomain.enabled}
+        WHERE id = #{dataDomainId}
+    </update>
+
+    <select id="selectByRoleId" parameterType="long" resultMap="BaseResultMap">
+        SELECT d.*
+        FROM sys_data_domain d
+                 INNER JOIN sys_role_data_domain rd ON rd.data_domain_id = d.id
+        WHERE rd.role_id = #{roleId}
+        ORDER BY d.id ASC
+    </select>
+
+    <delete id="deleteBindingsByRoleId" parameterType="long">
+        DELETE
+        FROM sys_role_data_domain
+        WHERE role_id = #{roleId}
+    </delete>
+
+    <insert id="bindRoleDataDomains">
+        INSERT INTO sys_role_data_domain(role_id, data_domain_id)
+        VALUES
+        <foreach collection="dataDomainIds" item="ddid" separator=",">
+            (#{roleId}, #{ddid})
+        </foreach>
+    </insert>
+
+</mapper>
+

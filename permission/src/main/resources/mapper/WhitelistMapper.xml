@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.skylark.permission.authorization.mapper.WhitelistMapper">
+
+    <resultMap id="BaseResultMap" type="cn.skylark.permission.authorization.entity.SysWhitelist">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="method" property="method" jdbcType="VARCHAR"/>
+        <result column="path" property="path" jdbcType="VARCHAR"/>
+        <result column="remark" property="remark" jdbcType="VARCHAR"/>
+        <result column="enabled" property="enabled" jdbcType="TINYINT"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, method, path, remark, enabled, create_time, update_time
+    </sql>
+
+    <select id="selectById" parameterType="long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_whitelist
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_whitelist
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectEnabled" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_whitelist
+        WHERE enabled = 1
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_whitelist
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectPageWithCondition" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_whitelist
+        <where>
+            <if test="method != null and method != ''">
+                AND method LIKE CONCAT('%', #{method}, '%')
+            </if>
+            <if test="path != null and path != ''">
+                AND path LIKE CONCAT('%', #{path}, '%')
+            </if>
+            <if test="remark != null and remark != ''">
+                AND remark LIKE CONCAT('%', #{remark}, '%')
+            </if>
+            <if test="enabled != null">
+                AND enabled = #{enabled}
+            </if>
+            <if test="createTime != null">
+                AND create_time &lt;= #{createTime}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*)
+        FROM sys_whitelist
+    </select>
+
+    <select id="countWithCondition" resultType="long">
+        SELECT COUNT(*)
+        FROM sys_whitelist
+        <where>
+            <if test="method != null and method != ''">
+                AND method LIKE CONCAT('%', #{method}, '%')
+            </if>
+            <if test="path != null and path != ''">
+                AND path LIKE CONCAT('%', #{path}, '%')
+            </if>
+            <if test="remark != null and remark != ''">
+                AND remark LIKE CONCAT('%', #{remark}, '%')
+            </if>
+            <if test="enabled != null">
+                AND enabled = #{enabled}
+            </if>
+            <if test="createTime != null">
+                AND create_time &lt;= #{createTime}
+            </if>
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="cn.skylark.permission.authorization.entity.SysWhitelist" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_whitelist(method, path, remark, enabled)
+        VALUES (#{method}, #{path}, #{remark}, COALESCE(#{enabled}, 1))
+    </insert>
+
+    <update id="update" parameterType="cn.skylark.permission.authorization.entity.SysWhitelist">
+        UPDATE sys_whitelist
+        SET method = #{method},
+            path = #{path},
+            remark = #{remark},
+            enabled = #{enabled}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateWhitelistInfo">
+        UPDATE sys_whitelist
+        SET method = #{whitelist.method},
+            path = #{whitelist.path},
+            remark = #{whitelist.remark},
+            enabled = #{whitelist.enabled}
+        WHERE id = #{whitelistId}
+    </update>
+
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM sys_whitelist
+        WHERE id = #{id}
+    </delete>
+
+</mapper>
+

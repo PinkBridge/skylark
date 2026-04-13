@@ -1,0 +1,40 @@
+.env
+.env.*
+!.env.example
+
+# OS / tooling
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+logs/
+
+# IntelliJ / JetBrains
+.idea/
+*.iml
+out/
+
+# VS Code / Cursor
+.vscode/
+.cursor/
+
+# Java / Maven / Spring
+target/
+*.jar
+*.war
+*.ear
+hs_err_pid*
+
+# Node / Vue
+node_modules/
+dist/
+.cache/
+
+# pnpm
+.pnpm-store/
+
+# Docker
+*.pid
+

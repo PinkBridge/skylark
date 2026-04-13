@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.skylark.permission.oauth2.mapper.RefreshTokenMapper">
+
+    <!-- delete refresh token by token id -->
+    <delete id="deleteByTokenId">
+        DELETE
+        FROM oauth_refresh_token
+        WHERE token_id = #{tokenId}
+    </delete>
+
+    <!-- delete all related refresh tokens by username -->
+    <!-- Note: since the token is of type BLOB, it needs to be deserialized to extract the username, which is complex to implement -->
+    <!-- Here is a placeholder, in actual use, it may need to be implemented through other ways -->
+    <delete id="deleteByUsername">
+        <!-- not implemented yet, because it needs to deserialize the BLOB field -->
+        <!-- if this function is needed, it can be considered to be implemented at the application level, or a mapping table from token_id to username can be maintained -->
+    </delete>
+
+</mapper>

@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.skylark.permission.authorization.mapper.UserMapper">
+
+    <resultMap id="BaseResultMap" type="cn.skylark.permission.authorization.entity.SysUser">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="username" property="username" jdbcType="VARCHAR"/>
+        <result column="password" property="password" jdbcType="VARCHAR"/>
+        <result column="enabled" property="enabled" jdbcType="TINYINT"/>
+        <result column="gender" property="gender" jdbcType="VARCHAR"/>
+        <result column="avatar" property="avatar" jdbcType="VARCHAR"/>
+        <result column="phone" property="phone" jdbcType="VARCHAR"/>
+        <result column="email" property="email" jdbcType="VARCHAR"/>
+        <result column="status" property="status" jdbcType="VARCHAR"/>
+        <result column="province" property="province" jdbcType="VARCHAR"/>
+        <result column="city" property="city" jdbcType="VARCHAR"/>
+        <result column="address" property="address" jdbcType="VARCHAR"/>
+        <result column="tenant_id" property="tenantId" jdbcType="BIGINT"/>
+        <result column="org_id" property="orgId" jdbcType="BIGINT"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <resultMap id="RoleResultMap" type="cn.skylark.permission.authorization.entity.SysRole">
+        <id column="role_id" property="id" jdbcType="BIGINT"/>
+        <result column="role_name" property="name" jdbcType="VARCHAR"/>
+        <result column="role_remark" property="remark" jdbcType="VARCHAR"/>
+        <result column="role_create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="role_update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, username, password, enabled, gender, avatar, phone, email, status, province, city, address, tenant_id, org_id, create_time, update_time
+    </sql>
+
+    <select id="findByUsername" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_user
+        WHERE username = #{username}
+        AND enabled = 1
+    </select>
+
+    <select id="selectById" parameterType="long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_user
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_user
+        ORDER BY create_time DESC
+    </select>
+
+    <insert id="insert" parameterType="cn.skylark.permission.authorization.entity.SysUser" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_user(username, password, enabled, gender, avatar, phone, email, status, province, city, address, tenant_id, org_id)
+        VALUES (#{username}, #{password}, COALESCE(#{enabled}, 1), #{gender}, #{avatar}, #{phone}, #{email}, 
+                COALESCE(#{status}, 'ACTIVE'), #{province}, #{city}, #{address}, #{tenantId}, #{orgId})
+    </insert>
+
+    <update id="update" parameterType="cn.skylark.permission.authorization.entity.SysUser">
+        UPDATE sys_user
+        SET username = #{username},
+            password = #{password},
+            enabled  = #{enabled},
+            gender = #{gender},
+            avatar = #{avatar},
+            phone = #{phone},
+            email = #{email},
+            status = #{status},
+            province = #{province},
+            city = #{city},
+            address = #{address},
+            tenant_id = #{tenantId},
+            org_id = #{orgId}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM sys_user
+        WHERE id = #{id}
+    </delete>
+
+    <select id="selectRolesByUserId" parameterType="long" resultMap="RoleResultMap">
+        SELECT r.id         AS role_id,
+               r.name       AS role_name,
+               r.remark     AS role_remark,
+               r.create_time AS role_create_time,
+               r.update_time AS role_update_time
+        FROM sys_role r
+                 INNER JOIN sys_user_role ur ON ur.role_id = r.id
+        WHERE ur.user_id = #{userId}
+        ORDER BY r.id ASC
+    </select>
+
+    <delete id="deleteUserRoles" parameterType="long">
+        DELETE
+        FROM sys_user_role
+        WHERE user_id = #{userId}
+    </delete>
+
+    <insert id="insertUserRoles">
+        INSERT INTO sys_user_role(user_id, role_id)
+        VALUES
+        <foreach collection="roleIds" item="roleId" separator=",">
+            (#{userId}, #{roleId})
+        </foreach>
+    </insert>
+
+    <update id="updatePassword">
+        UPDATE sys_user
+        SET password = #{password}
+        WHERE id = #{userId}
+    </update>
+
+    <update id="updateTenantIdByUserId">
+        UPDATE sys_user
+        SET tenant_id = #{tenantId}
+        WHERE id = #{userId}
+          AND (tenant_id IS NULL OR tenant_id &lt;&gt; #{tenantId})
+    </update>
+
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_user
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectPageWithCondition" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_user
+        <where>
+            <if test="username != null and username != ''">
+                AND username LIKE CONCAT('%', #{username}, '%')
+            </if>
+            <if test="phone != null and phone != ''">
+                AND phone LIKE CONCAT('%', #{phone}, '%')
+            </if>
+            <if test="email != null and email != ''">
+                AND email LIKE CONCAT('%', #{email}, '%')
+            </if>
+            <if test="createTime != null">
+                AND create_time &lt;= #{createTime}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*)
+        FROM sys_user
+    </select>
+
+    <select id="countWithCondition" resultType="long">
+        SELECT COUNT(*)
+        FROM sys_user
+        <where>
+            <if test="username != null and username != ''">
+                AND username LIKE CONCAT('%', #{username}, '%')
+            </if>
+            <if test="phone != null and phone != ''">
+                AND phone LIKE CONCAT('%', #{phone}, '%')
+            </if>
+            <if test="email != null and email != ''">
+                AND email LIKE CONCAT('%', #{email}, '%')
+            </if>
+            <if test="createTime != null">
+                AND create_time &lt;= #{createTime}
+            </if>
+        </where>
+    </select>
+
+    <update id="updateUserInfo">
+        UPDATE sys_user
+        SET username = #{user.username},
+            enabled  = #{user.enabled},
+            gender = #{user.gender},
+            avatar = #{user.avatar},
+            phone = #{user.phone},
+            email = #{user.email},
+            status = #{user.status},
+            province = #{user.province},
+            city = #{user.city},
+            address = #{user.address},
+            org_id = #{user.orgId}
+        WHERE id = #{userId}
+    </update>
+
+</mapper>

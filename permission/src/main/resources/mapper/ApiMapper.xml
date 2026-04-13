@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.skylark.permission.authorization.mapper.ApiMapper">
+
+    <resultMap id="ApiResult" type="cn.skylark.permission.authorization.entity.SysApi">
+        <id column="id" property="id"/>
+        <result column="method" property="method"/>
+        <result column="path" property="path"/>
+        <result column="permlabel" property="permlabel"/>
+        <result column="module_key" property="moduleKey"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="selectById" parameterType="long" resultMap="ApiResult">
+        SELECT *
+        FROM sys_api
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectAll" resultMap="ApiResult">
+        SELECT *
+        FROM sys_api
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectPage" resultMap="ApiResult">
+        SELECT *
+        FROM sys_api
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectPageWithCondition" resultMap="ApiResult">
+        SELECT *
+        FROM sys_api
+        <where>
+            <if test="method != null and method != ''">
+                AND method LIKE CONCAT('%', #{method}, '%')
+            </if>
+            <if test="path != null and path != ''">
+                AND path LIKE CONCAT('%', #{path}, '%')
+            </if>
+            <if test="permlabel != null and permlabel != ''">
+                AND permlabel LIKE CONCAT('%', #{permlabel}, '%')
+            </if>
+            <if test="moduleKey != null and moduleKey != ''">
+                AND module_key LIKE CONCAT('%', #{moduleKey}, '%')
+            </if>
+            <if test="createTime != null">
+                AND create_time &lt;= #{createTime}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*)
+        FROM sys_api
+    </select>
+
+    <select id="countWithCondition" resultType="long">
+        SELECT COUNT(*)
+        FROM sys_api
+        <where>
+            <if test="method != null and method != ''">
+                AND method LIKE CONCAT('%', #{method}, '%')
+            </if>
+            <if test="path != null and path != ''">
+                AND path LIKE CONCAT('%', #{path}, '%')
+            </if>
+            <if test="permlabel != null and permlabel != ''">
+                AND permlabel LIKE CONCAT('%', #{permlabel}, '%')
+            </if>
+            <if test="moduleKey != null and moduleKey != ''">
+                AND module_key LIKE CONCAT('%', #{moduleKey}, '%')
+            </if>
+            <if test="createTime != null">
+                AND create_time &lt;= #{createTime}
+            </if>
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="cn.skylark.permission.authorization.entity.SysApi">
+        INSERT INTO sys_api(method, path, permlabel, module_key)
+        VALUES (#{method}, #{path}, #{permlabel}, #{moduleKey})
+    </insert>
+
+    <update id="update" parameterType="cn.skylark.permission.authorization.entity.SysApi">
+        UPDATE sys_api
+        SET method     = #{method},
+            path       = #{path},
+            permlabel  = #{permlabel},
+            module_key = #{moduleKey}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateApiInfo">
+        UPDATE sys_api
+        SET method     = #{api.method},
+            path       = #{api.path},
+            permlabel  = #{api.permlabel},
+            module_key = #{api.moduleKey}
+        WHERE id = #{apiId}
+    </update>
+
+    <delete id="deleteById" parameterType="long">
+        DELETE
+        FROM sys_api
+        WHERE id = #{id}
+    </delete>
+
+    <select id="selectByRoleId" parameterType="long" resultMap="ApiResult">
+        SELECT a.*
+        FROM sys_api a
+                 INNER JOIN sys_role_api ra ON ra.api_id = a.id
+        WHERE ra.role_id = #{roleId}
+        ORDER BY a.id ASC
+    </select>
+
+    <delete id="deleteBindingsByRoleId" parameterType="long">
+        DELETE
+        FROM sys_role_api
+        WHERE role_id = #{roleId}
+    </delete>
+
+    <insert id="bindRoleApis">
+        INSERT INTO sys_role_api(role_id, api_id)
+        VALUES
+        <foreach collection="apiIds" item="aid" separator=",">
+            (#{roleId}, #{aid})
+        </foreach>
+    </insert>
+
+    <select id="existsRoleApiBinding" resultType="int">
+        SELECT COUNT(1)
+        FROM sys_role_api
+        WHERE role_id = #{roleId} AND api_id = #{apiId}
+    </select>
+
+    <delete id="deleteRoleApiBinding">
+        DELETE FROM sys_role_api
+        WHERE role_id = #{roleId} AND api_id = #{apiId}
+    </delete>
+
+    <insert id="insertRoleApiBinding">
+        INSERT INTO sys_role_api(role_id, api_id)
+        VALUES (#{roleId}, #{apiId})
+    </insert>
+
+    <select id="selectByRoleNames" resultMap="ApiResult">
+        SELECT DISTINCT a.*
+        FROM sys_api a
+                 INNER JOIN sys_role_api ra ON ra.api_id = a.id
+                 INNER JOIN sys_role r ON r.id = ra.role_id
+        WHERE r.name IN
+        <foreach collection="roleNames" item="roleName" open="(" separator="," close=")">
+            #{roleName}
+        </foreach>
+        ORDER BY a.id ASC
+    </select>
+
+    <select id="countByRoleNamesAndApi" resultType="int">
+        SELECT COUNT(1)
+        FROM sys_role r
+                 INNER JOIN sys_role_api ra ON ra.role_id = r.id
+                 INNER JOIN sys_api a ON a.id = ra.api_id
+        WHERE r.name IN
+        <foreach collection="roleNames" item="roleName" open="(" separator="," close=")">
+            #{roleName}
+        </foreach>
+        <if test="permlabel != null and permlabel != ''">
+            AND a.permlabel = #{permlabel}
+        </if>
+        <if test="permlabel == null or permlabel == ''">
+            AND a.method = #{method}
+            AND a.path = #{path}
+        </if>
+    </select>
+
+    <select id="selectIdsByPermlabels" resultType="long">
+        SELECT DISTINCT id
+        FROM sys_api
+        WHERE permlabel IN
+        <foreach collection="permlabels" item="permlabel" open="(" separator="," close=")">
+            #{permlabel}
+        </foreach>
+    </select>
+
+    <delete id="deleteRoleApisNotInAllowed">
+        DELETE FROM sys_role_api
+        WHERE role_id = #{roleId}
+        <if test="allowedApiIds != null and allowedApiIds.size() > 0">
+            AND api_id NOT IN
+            <foreach collection="allowedApiIds" item="aid" open="(" separator="," close=")">
+                #{aid}
+            </foreach>
+        </if>
+    </delete>
+
+</mapper>

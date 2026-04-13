@@ -1,0 +1,51 @@
+server:
+  port: 80
+
+spring:
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  datasource:
+    url: jdbc:mysql://localhost:3306/skylark_permission?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: dev
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+  servlet:
+    multipart:
+      # 单个文件最大大小
+      max-file-size: 100MB
+      # 请求最大大小
+      max-request-size: 100MB
+
+oauth:
+  signingKey: 374SJADK&*@!SHSAshhsdevops(90)
+
+# 平台参数内存缓存从数据库刷新的间隔（毫秒）
+platform:
+  config:
+    refresh-ms: 60000
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: cn.skylark.permission.oauth2.entity
+  configuration:
+    map-underscore-to-camel-case: true
+
+jackson:
+  serialization:
+    write-dates-as-timestamps: false
+  deserialization:
+    fail-on-unknown-properties: false
+
+# 文件上传配置
+file:
+  upload:
+    # 文件存储路径（相对路径或绝对路径）
+    path: D:/code/skylark/permission/uploads
+    # 文件访问URL前缀
+    url-prefix: /api/permission/resources/download/

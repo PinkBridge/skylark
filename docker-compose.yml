@@ -1,0 +1,73 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: skylark-mysql
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-skylark_permission}
+      - MYSQL_USER=${MYSQL_USER:-dev}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-123456}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 18
+      start_period: 25s
+
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: gateway
+    restart: unless-stopped
+    ports:
+      - "${GATEWAY_PORT:-80}:80"
+    environment:
+      - TZ=Asia/Shanghai
+      - services.permission.uri=${GATEWAY_PERMISSION_URI:-http://permission}
+    depends_on:
+      permission:
+        condition: service_started
+
+  permission-app:
+    build:
+      context: ./permission-pc
+      dockerfile: Dockerfile
+    container_name: permission-app
+    restart: unless-stopped
+    ports:
+      - "${PERMISSION_APP_PORT:-9527}:80"
+    depends_on:
+      gateway:
+        condition: service_started
+
+  permission:
+    build:
+      context: ./permission
+      dockerfile: Dockerfile
+    container_name: permission
+    restart: unless-stopped
+    ports:
+      - "${PERMISSION_PORT:-19527}:80"
+    environment:
+      - TZ=Asia/Shanghai
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${PERMISSION_DB_NAME:-skylark_permission}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=${PERMISSION_DB_USERNAME:-root}
+      - SPRING_DATASOURCE_PASSWORD=${PERMISSION_DB_PASSWORD:-123456}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
+      - FILE_UPLOAD_PATH=/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - permission_uploads:/app/uploads
+
+volumes:
+  mysql_data:
+  permission_uploads:

@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.skylark.permission.authorization.mapper.RoleMapper">
+
+    <resultMap id="RoleResult" type="cn.skylark.permission.authorization.entity.SysRole">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="remark" property="remark"/>
+        <result column="tenant_id" property="tenantId"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, name, remark, tenant_id, create_time, update_time
+    </sql>
+
+    <select id="selectById" parameterType="long" resultMap="RoleResult">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_role
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByNameAndTenantId" resultMap="RoleResult">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_role
+        WHERE name = #{name}
+          AND tenant_id = #{tenantId}
+        LIMIT 1
+    </select>
+
+    <select id="selectByTenantId" resultMap="RoleResult">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_role
+        WHERE tenant_id = #{tenantId}
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectAll" resultMap="RoleResult">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_role
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectPage" resultMap="RoleResult">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_role
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectPageWithCondition" resultMap="RoleResult">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_role
+        <where>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="remark != null and remark != ''">
+                AND remark LIKE CONCAT('%', #{remark}, '%')
+            </if>
+            <if test="createTime != null">
+                AND create_time &lt;= #{createTime}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*)
+        FROM sys_role
+    </select>
+
+    <select id="countWithCondition" resultType="long">
+        SELECT COUNT(*)
+        FROM sys_role
+        <where>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="remark != null and remark != ''">
+                AND remark LIKE CONCAT('%', #{remark}, '%')
+            </if>
+            <if test="createTime != null">
+                AND create_time &lt;= #{createTime}
+            </if>
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="cn.skylark.permission.authorization.entity.SysRole">
+        INSERT INTO sys_role(name, remark, tenant_id)
+        VALUES (#{name}, #{remark}, #{tenantId})
+    </insert>
+
+    <update id="update" parameterType="cn.skylark.permission.authorization.entity.SysRole">
+        UPDATE sys_role
+        SET name   = #{name},
+            remark = #{remark},
+            tenant_id = #{tenantId}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateRoleInfo">
+        UPDATE sys_role
+        SET name = #{role.name},
+            remark = #{role.remark}
+        WHERE id = #{roleId}
+    </update>
+
+    <delete id="deleteById" parameterType="long">
+        DELETE
+        FROM sys_role
+        WHERE id = #{id}
+    </delete>
+
+</mapper>

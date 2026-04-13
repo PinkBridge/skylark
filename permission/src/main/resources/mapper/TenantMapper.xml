@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.skylark.permission.authorization.mapper.TenantMapper">
+
+    <resultMap id="BaseResultMap" type="cn.skylark.permission.authorization.entity.SysTenant">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="system_name" property="systemName" jdbcType="VARCHAR"/>
+        <result column="code" property="code" jdbcType="VARCHAR"/>
+        <result column="contact_name" property="contactName" jdbcType="VARCHAR"/>
+        <result column="contact_phone" property="contactPhone" jdbcType="VARCHAR"/>
+        <result column="contact_email" property="contactEmail" jdbcType="VARCHAR"/>
+        <result column="domain" property="domain" jdbcType="VARCHAR"/>
+        <result column="logo" property="logo" jdbcType="VARCHAR"/>
+        <result column="address" property="address" jdbcType="VARCHAR"/>
+        <result column="description" property="description" jdbcType="VARCHAR"/>
+        <result column="status" property="status" jdbcType="VARCHAR"/>
+        <result column="expire_time" property="expireTime" jdbcType="TIMESTAMP"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, name, system_name, code, contact_name, contact_phone, contact_email,
+        domain, logo, address, description, status, expire_time,
+        create_time, update_time
+    </sql>
+
+    <select id="selectById" parameterType="long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_tenant
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByCode" parameterType="string" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_tenant
+        WHERE code = #{code}
+    </select>
+
+    <select id="selectByDomain" parameterType="string" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_tenant
+        WHERE domain = #{domain}
+    </select>
+
+    <select id="selectByDomainExcludeId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_tenant
+        WHERE domain = #{domain}
+          AND id != #{excludeId}
+        LIMIT 1
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_tenant
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_tenant
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectPageWithCondition" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_tenant
+        <where>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="code != null and code != ''">
+                AND code LIKE CONCAT('%', #{code}, '%')
+            </if>
+            <if test="contactPhone != null and contactPhone != ''">
+                AND contact_phone LIKE CONCAT('%', #{contactPhone}, '%')
+            </if>
+            <if test="contactEmail != null and contactEmail != ''">
+                AND contact_email LIKE CONCAT('%', #{contactEmail}, '%')
+            </if>
+            <if test="domain != null and domain != ''">
+                AND domain LIKE CONCAT('%', #{domain}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="createTime != null">
+                AND create_time &lt;= #{createTime}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*)
+        FROM sys_tenant
+    </select>
+
+    <select id="countWithCondition" resultType="long">
+        SELECT COUNT(*)
+        FROM sys_tenant
+        <where>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="code != null and code != ''">
+                AND code LIKE CONCAT('%', #{code}, '%')
+            </if>
+            <if test="contactPhone != null and contactPhone != ''">
+                AND contact_phone LIKE CONCAT('%', #{contactPhone}, '%')
+            </if>
+            <if test="contactEmail != null and contactEmail != ''">
+                AND contact_email LIKE CONCAT('%', #{contactEmail}, '%')
+            </if>
+            <if test="domain != null and domain != ''">
+                AND domain LIKE CONCAT('%', #{domain}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="createTime != null">
+                AND create_time &lt;= #{createTime}
+            </if>
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="cn.skylark.permission.authorization.entity.SysTenant"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_tenant(
+            name, system_name, code, contact_name, contact_phone, contact_email,
+            domain, logo, address, description, status, expire_time
+        )
+        VALUES (
+            #{name}, #{systemName}, #{code}, #{contactName}, #{contactPhone}, #{contactEmail},
+            #{domain}, #{logo}, #{address}, #{description}, #{status}, #{expireTime}
+        )
+    </insert>
+
+    <update id="update" parameterType="cn.skylark.permission.authorization.entity.SysTenant">
+        UPDATE sys_tenant
+        SET name = #{name},
+            system_name = #{systemName},
+            code = #{code},
+            contact_name = #{contactName},
+            contact_phone = #{contactPhone},
+            contact_email = #{contactEmail},
+            domain = #{domain},
+            logo = #{logo},
+            address = #{address},
+            description = #{description},
+            status = #{status},
+            expire_time = #{expireTime}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateTenantInfo">
+        UPDATE sys_tenant
+        SET name = #{tenant.name},
+            system_name = #{tenant.systemName},
+            contact_name = #{tenant.contactName},
+            contact_phone = #{tenant.contactPhone},
+            contact_email = #{tenant.contactEmail},
+            domain = #{tenant.domain},
+            logo = #{tenant.logo},
+            address = #{tenant.address},
+            description = #{tenant.description},
+            status = #{tenant.status},
+            expire_time = #{tenant.expireTime}
+        WHERE id = #{tenantId}
+    </update>
+
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM sys_tenant
+        WHERE id = #{id}
+    </delete>
+
+</mapper>
+
+

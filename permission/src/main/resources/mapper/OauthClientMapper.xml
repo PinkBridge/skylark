@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.skylark.permission.authorization.mapper.OauthClientMapper">
+
+    <resultMap id="BaseResultMap" type="cn.skylark.permission.authorization.entity.OauthClientDetails">
+        <id column="client_id" property="clientId" jdbcType="VARCHAR"/>
+        <result column="resource_ids" property="resourceIds" jdbcType="VARCHAR"/>
+        <result column="client_secret" property="clientSecret" jdbcType="VARCHAR"/>
+        <result column="scope" property="scope" jdbcType="VARCHAR"/>
+        <result column="authorized_grant_types" property="authorizedGrantTypes" jdbcType="VARCHAR"/>
+        <result column="web_server_redirect_uri" property="webServerRedirectUri" jdbcType="VARCHAR"/>
+        <result column="authorities" property="authorities" jdbcType="VARCHAR"/>
+        <result column="access_token_validity" property="accessTokenValidity" jdbcType="INTEGER"/>
+        <result column="refresh_token_validity" property="refreshTokenValidity" jdbcType="INTEGER"/>
+        <result column="additional_information" property="additionalInformation" jdbcType="VARCHAR"/>
+        <result column="autoapprove" property="autoapprove" jdbcType="VARCHAR"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        client_id, resource_ids, client_secret, scope, authorized_grant_types,
+        web_server_redirect_uri, authorities, access_token_validity, refresh_token_validity,
+        additional_information, autoapprove, create_time, update_time
+    </sql>
+
+    <select id="selectByClientId" parameterType="string" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM oauth_client_details
+        WHERE client_id = #{clientId}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM oauth_client_details
+        ORDER BY client_id ASC
+    </select>
+
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM oauth_client_details
+        ORDER BY client_id ASC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectPageWithCondition" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM oauth_client_details
+        <where>
+            <if test="clientId != null and clientId != ''">
+                AND client_id LIKE CONCAT('%', #{clientId}, '%')
+            </if>
+            <if test="authorizedGrantTypes != null and authorizedGrantTypes != ''">
+                AND authorized_grant_types LIKE CONCAT('%', #{authorizedGrantTypes}, '%')
+            </if>
+            <if test="scope != null and scope != ''">
+                AND scope LIKE CONCAT('%', #{scope}, '%')
+            </if>
+        </where>
+        ORDER BY client_id ASC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*)
+        FROM oauth_client_details
+    </select>
+
+    <select id="countWithCondition" resultType="long">
+        SELECT COUNT(*)
+        FROM oauth_client_details
+        <where>
+            <if test="clientId != null and clientId != ''">
+                AND client_id LIKE CONCAT('%', #{clientId}, '%')
+            </if>
+            <if test="authorizedGrantTypes != null and authorizedGrantTypes != ''">
+                AND authorized_grant_types LIKE CONCAT('%', #{authorizedGrantTypes}, '%')
+            </if>
+            <if test="scope != null and scope != ''">
+                AND scope LIKE CONCAT('%', #{scope}, '%')
+            </if>
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="cn.skylark.permission.authorization.entity.OauthClientDetails">
+        INSERT INTO oauth_client_details(
+            client_id, resource_ids, client_secret, scope, authorized_grant_types,
+            web_server_redirect_uri, authorities, access_token_validity, refresh_token_validity,
+            additional_information, autoapprove
+        )
+        VALUES (
+            #{clientId}, #{resourceIds}, #{clientSecret}, #{scope}, #{authorizedGrantTypes},
+            #{webServerRedirectUri}, #{authorities}, #{accessTokenValidity}, #{refreshTokenValidity},
+            #{additionalInformation}, #{autoapprove}
+        )
+    </insert>
+
+    <update id="update" parameterType="cn.skylark.permission.authorization.entity.OauthClientDetails">
+        UPDATE oauth_client_details
+        SET resource_ids = #{resourceIds},
+            client_secret = #{clientSecret},
+            scope = #{scope},
+            authorized_grant_types = #{authorizedGrantTypes},
+            web_server_redirect_uri = #{webServerRedirectUri},
+            authorities = #{authorities},
+            access_token_validity = #{accessTokenValidity},
+            refresh_token_validity = #{refreshTokenValidity},
+            additional_information = #{additionalInformation},
+            autoapprove = #{autoapprove}
+        WHERE client_id = #{clientId}
+    </update>
+
+    <update id="updateClientInfo">
+        UPDATE oauth_client_details
+        SET resource_ids = #{client.resourceIds},
+            <if test="client.clientSecret != null and client.clientSecret != ''">
+                client_secret = #{client.clientSecret},
+            </if>
+            scope = #{client.scope},
+            authorized_grant_types = #{client.authorizedGrantTypes},
+            web_server_redirect_uri = #{client.webServerRedirectUri},
+            authorities = #{client.authorities},
+            access_token_validity = #{client.accessTokenValidity},
+            refresh_token_validity = #{client.refreshTokenValidity},
+            additional_information = #{client.additionalInformation},
+            autoapprove = #{client.autoapprove}
+        WHERE client_id = #{clientId}
+    </update>
+
+    <update id="updateRedirectUriByClientId">
+        UPDATE oauth_client_details
+        SET web_server_redirect_uri = #{webServerRedirectUri}
+        WHERE client_id = #{clientId}
+    </update>
+
+    <delete id="deleteByClientId" parameterType="string">
+        DELETE FROM oauth_client_details
+        WHERE client_id = #{clientId}
+    </delete>
+
+</mapper>
+
