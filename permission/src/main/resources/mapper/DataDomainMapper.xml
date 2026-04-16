@@ -167,11 +167,13 @@
     </delete>
 
     <insert id="bindRoleDataDomains">
-        INSERT INTO sys_role_data_domain(role_id, data_domain_id)
+        INSERT INTO sys_role_data_domain(role_id, data_domain_id, is_delete)
         VALUES
         <foreach collection="dataDomainIds" item="ddid" separator=",">
-            (#{roleId}, #{ddid})
+            (#{roleId}, #{ddid}, 0)
         </foreach>
+        ON DUPLICATE KEY UPDATE
+            is_delete = 0
     </insert>
 
 </mapper>
