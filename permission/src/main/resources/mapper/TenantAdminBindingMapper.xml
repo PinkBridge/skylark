@@ -17,6 +17,13 @@
         LIMIT 1
     </select>
 
+    <select id="selectTenantIdsByCeilingRoleId" resultType="long">
+        SELECT tenant_id
+        FROM sys_tenant_admin_binding
+        WHERE role_id = #{roleId}
+          AND is_delete = 0
+    </select>
+
     <insert id="upsert">
         INSERT INTO sys_tenant_admin_binding(tenant_id, user_id, role_id)
         VALUES (#{tenantId}, #{userId}, #{roleId})

@@ -78,6 +78,9 @@ public class TenantService {
   @Resource
   private PlatformConfigService platformConfigService;
 
+  @Resource
+  private OauthClientMetaService oauthClientMetaService;
+
   public SysTenant get(Long id) {
     return tenantMapper.selectById(id);
   }
@@ -373,12 +376,13 @@ public class TenantService {
       if (client == null) {
         continue;
       }
-      String updatedRedirectUris = rewriteRedirectUris(client.getWebServerRedirectUri(), oldHost, newHost);
+      Integer port = oauthClientMetaService == null ? null : oauthClientMetaService.portByClientId(clientId);
+      String updatedRedirectUris = rewriteRedirectUris(client.getWebServerRedirectUri(), oldHost, newHost, port);
       oauthClientMapper.updateRedirectUriByClientId(clientId, updatedRedirectUris);
     }
   }
 
-  private String rewriteRedirectUris(String redirectUrisRaw, String oldHost, String newHost) {
+  private String rewriteRedirectUris(String redirectUrisRaw, String oldHost, String newHost, Integer port) {
     Set<String> uris = new LinkedHashSet<>();
     if (StringUtils.hasText(redirectUrisRaw)) {
       String[] parts = redirectUrisRaw.split(",");
@@ -393,8 +397,8 @@ public class TenantService {
         uris.add(uri);
       }
     }
-    if (StringUtils.hasText(newHost)) {
-      uris.add("http://" + newHost + "/home");
+    if (StringUtils.hasText(newHost) && port != null && port > 0) {
+      uris.add("http://" + newHost + ":" + port + "/home");
     }
     return String.join(",", new ArrayList<>(uris));
   }
@@ -406,9 +410,8 @@ public class TenantService {
     try {
       URI uri = URI.create(uriRaw.trim());
       String uriHost = uri.getHost();
-      int uriPort = uri.getPort();
-      String targetHost = uriPort > 0 ? (uriHost + ":" + uriPort) : uriHost;
-      if (!StringUtils.hasText(targetHost) || !host.equalsIgnoreCase(targetHost)) {
+      // tenant domain does not include port, so compare host only.
+      if (!StringUtils.hasText(uriHost) || !host.equalsIgnoreCase(uriHost)) {
         return false;
       }
       String path = uri.getPath();
@@ -429,8 +432,8 @@ public class TenantService {
       if (!StringUtils.hasText(host)) {
         return "";
       }
-      int port = uri.getPort();
-      return port > 0 ? host + ":" + port : host;
+      // Tenant domain is stored without port. Keep only host part.
+      return host;
     } catch (Exception e) {
       return "";
     }
@@ -441,7 +444,31 @@ public class TenantService {
       return null;
     }
     String value = rawDomain.trim();
-    return StringUtils.hasText(value) ? value : null;
+    if (!StringUtils.hasText(value)) {
+      return null;
+    }
+    // Domain must NOT include port. Accept domain or IP only.
+    // Also accept inputs like "http://example.com" by extracting host.
+    try {
+      URI uri = URI.create(value.contains("://") ? value : ("http://" + value));
+      String host = uri.getHost();
+      int port = uri.getPort();
+      if (!StringUtils.hasText(host)) {
+        return null;
+      }
+      if (port > 0) {
+        throw new IllegalArgumentException("tenant.domain.port.not.allowed");
+      }
+      return host.trim();
+    } catch (IllegalArgumentException e) {
+      // rethrow our explicit message
+      if ("tenant.domain.port.not.allowed".equals(e.getMessage())) {
+        throw e;
+      }
+      return null;
+    } catch (Exception e) {
+      return null;
+    }
   }
 
   /**

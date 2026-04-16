@@ -39,6 +39,11 @@ public interface DataDomainMapper {
   int insert(SysDataDomain dataDomain);
 
   /**
+   * 按 (code, tenantId) 查询数据域（用于生成唯一编码）。
+   */
+  SysDataDomain selectByCodeAndTenantId(@Param("code") String code, @Param("tenantId") Long tenantId);
+
+  /**
    * 更新数据域
    *
    * @param dataDomain 数据域

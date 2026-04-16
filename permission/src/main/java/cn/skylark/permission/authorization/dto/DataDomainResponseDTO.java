@@ -53,6 +53,11 @@ public class DataDomainResponseDTO {
   private Long tenantId;
 
   /**
+   * 租户名称
+   */
+  private String tenantName;
+
+  /**
    * 是否启用
    */
   private Boolean enabled;

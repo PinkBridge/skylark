@@ -32,6 +32,14 @@ export function updateUserById(id, user) {
 }
 
 /**
+ * Admin reset user's password
+ * PUT /api/permission/users/{id}/password:reset
+ */
+export function adminResetUserPassword(id, newPassword) {
+  return http.put(`${USER_PREFIX}/${id}/password:reset`, { newPassword })
+}
+
+/**
  * Create user
  */
 export function createUser(user) {

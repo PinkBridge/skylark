@@ -12,12 +12,13 @@
         <result column="description" property="description" jdbcType="VARCHAR"/>
         <result column="tenant_id" property="tenantId" jdbcType="BIGINT"/>
         <result column="enabled" property="enabled" jdbcType="TINYINT"/>
+        <result column="is_delete" property="isDelete" jdbcType="TINYINT"/>
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
         <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, name, code, type, scope_value, custom_sql, description, tenant_id, enabled, create_time, update_time
+        id, name, code, type, scope_value, custom_sql, description, tenant_id, enabled, is_delete, create_time, update_time
     </sql>
 
     <select id="selectById" parameterType="long" resultMap="BaseResultMap">
@@ -25,13 +26,25 @@
         <include refid="Base_Column_List"/>
         FROM sys_data_domain
         WHERE id = #{id}
+          AND is_delete = 0
     </select>
 
     <select id="selectAll" resultMap="BaseResultMap">
         SELECT
         <include refid="Base_Column_List"/>
         FROM sys_data_domain
+        WHERE is_delete = 0
         ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByCodeAndTenantId" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_data_domain
+        WHERE code = #{code}
+          AND tenant_id = #{tenantId}
+          AND is_delete = 0
+        LIMIT 1
     </select>
 
     <insert id="insert" parameterType="cn.skylark.permission.authorization.entity.SysDataDomain" useGeneratedKeys="true" keyProperty="id">
@@ -42,7 +55,7 @@
     <update id="update" parameterType="cn.skylark.permission.authorization.entity.SysDataDomain">
         UPDATE sys_data_domain
         SET name = #{name},
-            code = #{code},
+            code = COALESCE(#{code}, code),
             type = #{type},
             scope_value = #{scopeValue},
             custom_sql = #{customSql},
@@ -53,14 +66,17 @@
     </update>
 
     <delete id="deleteById" parameterType="long">
-        DELETE FROM sys_data_domain
+        UPDATE sys_data_domain
+        SET is_delete = 1
         WHERE id = #{id}
+          AND is_delete = 0
     </delete>
 
     <select id="selectPage" resultMap="BaseResultMap">
         SELECT
         <include refid="Base_Column_List"/>
         FROM sys_data_domain
+        WHERE is_delete = 0
         ORDER BY create_time DESC
         LIMIT #{offset}, #{limit}
     </select>
@@ -70,6 +86,7 @@
         <include refid="Base_Column_List"/>
         FROM sys_data_domain
         <where>
+            is_delete = 0
             <if test="name != null and name != ''">
                 AND name LIKE CONCAT('%', #{name}, '%')
             </if>
@@ -93,12 +110,14 @@
     <select id="countAll" resultType="long">
         SELECT COUNT(*)
         FROM sys_data_domain
+        WHERE is_delete = 0
     </select>
 
     <select id="countWithCondition" resultType="long">
         SELECT COUNT(*)
         FROM sys_data_domain
         <where>
+            is_delete = 0
             <if test="name != null and name != ''">
                 AND name LIKE CONCAT('%', #{name}, '%')
             </if>
@@ -120,13 +139,14 @@
     <update id="updateDataDomainInfo">
         UPDATE sys_data_domain
         SET name = #{dataDomain.name},
-            code = #{dataDomain.code},
+            code = COALESCE(#{dataDomain.code}, code),
             type = #{dataDomain.type},
             scope_value = #{dataDomain.scopeValue},
             custom_sql = #{dataDomain.customSql},
             description = #{dataDomain.description},
             enabled = #{dataDomain.enabled}
         WHERE id = #{dataDomainId}
+          AND is_delete = 0
     </update>
 
     <select id="selectByRoleId" parameterType="long" resultMap="BaseResultMap">
@@ -134,13 +154,16 @@
         FROM sys_data_domain d
                  INNER JOIN sys_role_data_domain rd ON rd.data_domain_id = d.id
         WHERE rd.role_id = #{roleId}
+          AND rd.is_delete = 0
+          AND d.is_delete = 0
         ORDER BY d.id ASC
     </select>
 
     <delete id="deleteBindingsByRoleId" parameterType="long">
-        DELETE
-        FROM sys_role_data_domain
+        UPDATE sys_role_data_domain
+        SET is_delete = 1
         WHERE role_id = #{roleId}
+          AND is_delete = 0
     </delete>
 
     <insert id="bindRoleDataDomains">

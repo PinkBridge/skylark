@@ -3,8 +3,14 @@ package cn.skylark.permission.authorization.interceptor;
 import cn.skylark.permission.authorization.context.TenantContext;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.Parenthesis;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
+import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
+import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
+import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
+import net.sf.jsqlparser.expression.operators.relational.InExpression;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
@@ -26,6 +32,7 @@ import org.apache.ibatis.session.RowBounds;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -226,6 +233,114 @@ public class TenantInterceptor implements Interceptor {
     return containsTenantTable;
   }
 
+  private static String normalizeTableName(String tableName) {
+    if (tableName == null) {
+      return "";
+    }
+    return tableName.replace("`", "").trim().toLowerCase();
+  }
+
+  private static boolean shouldApplyRowDataScope() {
+    if (TenantContext.isAllPlatformDataScope()) {
+      return false;
+    }
+    if (TenantContext.isDataScopeWholeTenant()) {
+      return false;
+    }
+    List<Long> orgIds = TenantContext.getDataScopeOrgIds();
+    boolean hasOrgs = orgIds != null && !orgIds.isEmpty();
+    boolean self = TenantContext.isDataScopeSelfOnly();
+    return hasOrgs || self;
+  }
+
+  private void appendRowDataScopeWhere(PlainSelect plainSelect, Table table) {
+    if (!shouldApplyRowDataScope()) {
+      return;
+    }
+    Expression scopeExpr = buildRowDataScopeExpression(table, normalizeTableName(table.getName()));
+    if (scopeExpr == null) {
+      return;
+    }
+    if (plainSelect.getWhere() != null) {
+      plainSelect.setWhere(new AndExpression(plainSelect.getWhere(), scopeExpr));
+    } else {
+      plainSelect.setWhere(scopeExpr);
+    }
+  }
+
+  private void appendRowDataScopeMutation(Table table, java.util.function.Supplier<Expression> getWhere,
+      java.util.function.Consumer<Expression> setWhere) {
+    if (!shouldApplyRowDataScope()) {
+      return;
+    }
+    Expression scopeExpr = buildRowDataScopeExpression(table, normalizeTableName(table.getName()));
+    if (scopeExpr == null) {
+      return;
+    }
+    Expression w = getWhere.get();
+    if (w != null) {
+      setWhere.accept(new AndExpression(w, scopeExpr));
+    } else {
+      setWhere.accept(scopeExpr);
+    }
+  }
+
+  private static Expression buildRowDataScopeExpression(Table table, String normalizedName) {
+    if ("sys_user".equals(normalizedName)) {
+      return buildSysUserRowScope(table);
+    }
+    if ("sys_organization".equals(normalizedName)) {
+      return buildSysOrganizationRowScope(table);
+    }
+    return null;
+  }
+
+  private static Expression buildSysOrganizationRowScope(Table table) {
+    List<Long> orgIds = TenantContext.getDataScopeOrgIds();
+    if (orgIds == null || orgIds.isEmpty()) {
+      return null;
+    }
+    return newInExpression(table, "id", orgIds);
+  }
+
+  private static Expression buildSysUserRowScope(Table table) {
+    List<Long> orgIds = TenantContext.getDataScopeOrgIds();
+    boolean hasOrgs = orgIds != null && !orgIds.isEmpty();
+    boolean selfOnly = TenantContext.isDataScopeSelfOnly();
+    Long uid = TenantContext.getDataScopeUserId();
+    List<Expression> parts = new ArrayList<>();
+    if (hasOrgs) {
+      parts.add(newInExpression(table, "org_id", orgIds));
+    }
+    if (selfOnly && uid != null) {
+      EqualsTo eq = new EqualsTo();
+      eq.setLeftExpression(new Column(table, "id"));
+      eq.setRightExpression(new LongValue(uid));
+      parts.add(eq);
+    }
+    if (parts.isEmpty()) {
+      return null;
+    }
+    if (parts.size() == 1) {
+      return parts.get(0);
+    }
+    Expression combined = parts.get(0);
+    for (int i = 1; i < parts.size(); i++) {
+      combined = new OrExpression(combined, parts.get(i));
+    }
+    return new Parenthesis(combined);
+  }
+
+  private static InExpression newInExpression(Table table, String column, List<Long> ids) {
+    List<Expression> exprs = new ArrayList<>(ids.size());
+    for (Long id : ids) {
+      if (id != null) {
+        exprs.add(new LongValue(id));
+      }
+    }
+    return new InExpression(new Column(table, column), new ExpressionList(exprs));
+  }
+
   /**
    * 处理SELECT语句
    */
@@ -235,26 +350,22 @@ public class TenantInterceptor implements Interceptor {
       Table table = (Table) plainSelect.getFromItem();
 
       if (isTenantTable(table.getName())) {
-        // 检查WHERE子句是否已包含tenant_id
-        if (plainSelect.getWhere() != null) {
-          String whereStr = plainSelect.getWhere().toString();
-          if (whereStr.contains(TENANT_ID_COLUMN)) {
-            return select.toString();
+        boolean alreadyHasTenantInWhere = plainSelect.getWhere() != null
+            && plainSelect.getWhere().toString().contains(TENANT_ID_COLUMN);
+        if (!alreadyHasTenantInWhere) {
+          net.sf.jsqlparser.expression.BinaryExpression tenantCondition =
+              new net.sf.jsqlparser.expression.operators.relational.EqualsTo();
+          tenantCondition.setLeftExpression(new Column(table, TENANT_ID_COLUMN));
+          tenantCondition.setRightExpression(new LongValue(tenantId));
+
+          if (plainSelect.getWhere() != null) {
+            plainSelect.setWhere(new AndExpression(plainSelect.getWhere(), tenantCondition));
+          } else {
+            plainSelect.setWhere(tenantCondition);
           }
         }
-
-        // 添加tenant_id条件
-        net.sf.jsqlparser.expression.BinaryExpression tenantCondition =
-            new net.sf.jsqlparser.expression.operators.relational.EqualsTo();
-        tenantCondition.setLeftExpression(new Column(table, TENANT_ID_COLUMN));
-        tenantCondition.setRightExpression(new LongValue(tenantId));
-
-        if (plainSelect.getWhere() != null) {
-          plainSelect.setWhere(new AndExpression(plainSelect.getWhere(), tenantCondition));
-        } else {
-          plainSelect.setWhere(tenantCondition);
-        }
       }
+      appendRowDataScopeWhere(plainSelect, table);
     }
     return select.toString();
   }
@@ -375,6 +486,7 @@ public class TenantInterceptor implements Interceptor {
       } else {
         update.setWhere(tenantCondition);
       }
+      appendRowDataScopeMutation(table, update::getWhere, update::setWhere);
     }
     return update.toString();
   }
@@ -404,6 +516,7 @@ public class TenantInterceptor implements Interceptor {
       } else {
         delete.setWhere(tenantCondition);
       }
+      appendRowDataScopeMutation(table, delete::getWhere, delete::setWhere);
     }
     return delete.toString();
   }

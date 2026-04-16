@@ -20,6 +20,10 @@ const enMessages = {
   ConfirmPasswordPlaceholder: 'Please enter the confirm password',
   ResetPasswordSuccess: 'Password reset successfully',
   ResetPasswordFailed: 'Password reset failed',
+  AdminResetPasswordLabel: 'Reset password',
+  AdminResetPasswordTitle: 'Reset user password',
+  AdminResetPasswordPrompt: 'Enter a new password',
+  AdminResetPasswordSuccess: 'Password has been reset',
   LogoutFailed: 'Logout failed',
   FormValidationFailed: 'Form validation failed',
   UserPhotoLabel: 'User Photo',
@@ -201,6 +205,21 @@ const enMessages = {
   PlatformConfigValueLabel: 'Value',
   PlatformConfigTypeLabel: 'Type',
   PlatformConfigDescriptionLabel: 'Description',
+
+  PlatformInitTitle: 'Initialize Platform',
+  PlatformInitSubtitle: 'Complete the required information to start using the system.',
+  PlatformInitStepTenant: 'Default Tenant',
+  PlatformInitStepAdmin: 'Super Admin Account',
+  NextLabel: 'Next',
+  BackLabel: 'Back',
+  SubmitLabel: 'Submit',
+  PlatformInitSuccess: 'Initialized successfully',
+  SystemNameRequired: 'Please enter system name',
+  DomainRequired: 'Please enter domain',
+  LogoRequired: 'Please upload logo',
+  DomainFormatError: 'Please enter a valid domain or IP',
+  DomainPortNotAllowed: 'Port is not allowed in tenant domain',
+  PlatformInitDomainPlaceholder: 'Domain or IP (e.g., example.com or 192.168.1.10)',
 }
 
 export default enMessages

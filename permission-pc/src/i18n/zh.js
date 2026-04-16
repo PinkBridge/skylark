@@ -20,6 +20,10 @@ const zhMessages = {
   ConfirmPasswordPlaceholder: '请输入确认密码',
   ResetPasswordSuccess: '密码重置成功',
   ResetPasswordFailed: '密码重置失败',
+  AdminResetPasswordLabel: '重置密码',
+  AdminResetPasswordTitle: '重置用户密码',
+  AdminResetPasswordPrompt: '请输入新密码',
+  AdminResetPasswordSuccess: '密码已重置',
   LogoutFailed: '退出登录失败',
   FormValidationFailed: '表单验证失败',
   UserPhotoLabel: '用户照片',
@@ -202,6 +206,21 @@ const zhMessages = {
   PlatformConfigValueLabel: '当前值',
   PlatformConfigTypeLabel: '类型',
   PlatformConfigDescriptionLabel: '说明',
+
+  PlatformInitTitle: '系统初始化',
+  PlatformInitSubtitle: '请填写必要信息以开始使用系统。',
+  PlatformInitStepTenant: '默认租户',
+  PlatformInitStepAdmin: '最高管理员账号',
+  NextLabel: '下一步',
+  BackLabel: '上一步',
+  SubmitLabel: '提交',
+  PlatformInitSuccess: '初始化成功',
+  SystemNameRequired: '请输入系统名称',
+  DomainRequired: '请输入域名',
+  LogoRequired: '请上传 Logo',
+  DomainFormatError: '请输入正确的域名或 IP',
+  DomainPortNotAllowed: '租户域名不允许包含端口',
+  PlatformInitDomainPlaceholder: '域名或 IP（如 example.com 或 192.168.1.10）',
 }
 
 export default zhMessages

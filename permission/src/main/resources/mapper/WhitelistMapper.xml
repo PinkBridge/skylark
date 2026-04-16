@@ -8,12 +8,13 @@
         <result column="path" property="path" jdbcType="VARCHAR"/>
         <result column="remark" property="remark" jdbcType="VARCHAR"/>
         <result column="enabled" property="enabled" jdbcType="TINYINT"/>
+        <result column="is_delete" property="isDelete" jdbcType="TINYINT"/>
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
         <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, method, path, remark, enabled, create_time, update_time
+        id, method, path, remark, enabled, is_delete, create_time, update_time
     </sql>
 
     <select id="selectById" parameterType="long" resultMap="BaseResultMap">
@@ -21,12 +22,14 @@
         <include refid="Base_Column_List"/>
         FROM sys_whitelist
         WHERE id = #{id}
+          AND is_delete = 0
     </select>
 
     <select id="selectAll" resultMap="BaseResultMap">
         SELECT
         <include refid="Base_Column_List"/>
         FROM sys_whitelist
+        WHERE is_delete = 0
         ORDER BY create_time DESC
     </select>
 
@@ -35,6 +38,7 @@
         <include refid="Base_Column_List"/>
         FROM sys_whitelist
         WHERE enabled = 1
+          AND is_delete = 0
         ORDER BY create_time DESC
     </select>
 
@@ -42,6 +46,7 @@
         SELECT
         <include refid="Base_Column_List"/>
         FROM sys_whitelist
+        WHERE is_delete = 0
         ORDER BY create_time DESC
         LIMIT #{offset}, #{limit}
     </select>
@@ -51,6 +56,7 @@
         <include refid="Base_Column_List"/>
         FROM sys_whitelist
         <where>
+            is_delete = 0
             <if test="method != null and method != ''">
                 AND method LIKE CONCAT('%', #{method}, '%')
             </if>
@@ -74,12 +80,14 @@
     <select id="countAll" resultType="long">
         SELECT COUNT(*)
         FROM sys_whitelist
+        WHERE is_delete = 0
     </select>
 
     <select id="countWithCondition" resultType="long">
         SELECT COUNT(*)
         FROM sys_whitelist
         <where>
+            is_delete = 0
             <if test="method != null and method != ''">
                 AND method LIKE CONCAT('%', #{method}, '%')
             </if>
@@ -122,8 +130,10 @@
     </update>
 
     <delete id="deleteById" parameterType="long">
-        DELETE FROM sys_whitelist
+        UPDATE sys_whitelist
+        SET is_delete = 1
         WHERE id = #{id}
+          AND is_delete = 0
     </delete>
 
 </mapper>

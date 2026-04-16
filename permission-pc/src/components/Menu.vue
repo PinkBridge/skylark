@@ -54,13 +54,35 @@ export default {
       return children.filter(isVisibleMenu)
     }
 
+    const normalizeMenuTree = (nodes) => {
+      if (!Array.isArray(nodes)) return []
+      const out = []
+      for (const n of nodes) {
+        if (!isVisibleMenu(n)) continue
+        const normalizedChildren = normalizeMenuTree(n.children)
+        // Only keep groups that have at least one visible menu child,
+        // otherwise button-only groups would pollute the sidebar.
+        out.push({
+          ...n,
+          children: normalizedChildren
+        })
+      }
+      // At the top level, we still want only groups with children.
+      return out
+    }
+
+    const filterTopLevelGroups = (nodes) => {
+      const normalized = normalizeMenuTree(nodes)
+      return normalized.filter(n => Array.isArray(n.children) && n.children.length > 0)
+    }
+
     const selectFirstChild = () => {
       // Only redirect to first child if current path is exactly /home or /home/
       // Don't redirect if user is already on a specific route like /perm/tenants
       if (route.path === '/home' || route.path === '/home/') {
         if (!menuItems.value.length) return
-        const firstGroup = menuItems.value[0]
-        const firstChild = getVisibleChildren(firstGroup?.children)?.[0]
+        const firstGroup = menuItems.value.find(g => Array.isArray(getVisibleChildren(g?.children)) && getVisibleChildren(g.children).length > 0)
+        const firstChild = firstGroup ? getVisibleChildren(firstGroup.children)?.[0] : null
         const targetPath = firstChild?.path ? String(firstChild.path) : '/home'
         router.replace(targetPath)
         activeMenu.value = targetPath
@@ -77,9 +99,10 @@ export default {
         if (data) {
           setMenuTreeForPermLabels(data)
           persistPermissionLabelsFromMenuTree(data)
+          const groups = filterTopLevelGroups(data)
           // Set defaultOpeneds first
-          defaultOpeneds.value = data.map(item => String(item.id))
-          menuItems.value = data
+          defaultOpeneds.value = groups.map(item => String(item.id))
+          menuItems.value = groups
           loadedFromServer.value = true
           // Force re-render by updating key
           nextTick(() => {
@@ -134,8 +157,9 @@ export default {
           if (data) {
             setMenuTreeForPermLabels(data)
             persistPermissionLabelsFromMenuTree(data)
-            defaultOpeneds.value = data.map(item => String(item.id))
-            menuItems.value = data
+            const groups = filterTopLevelGroups(data)
+            defaultOpeneds.value = groups.map(item => String(item.id))
+            menuItems.value = groups
             nextTick(() => {
               menuKey.value++
               if (route.path === '/home' || route.path === '/home/') {

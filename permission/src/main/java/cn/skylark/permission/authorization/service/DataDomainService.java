@@ -5,7 +5,9 @@ import cn.skylark.permission.authorization.dto.DataDomainPageRequest;
 import cn.skylark.permission.authorization.dto.DataDomainResponseDTO;
 import cn.skylark.permission.authorization.dto.UpdateDataDomainDTO;
 import cn.skylark.permission.authorization.entity.SysDataDomain;
+import cn.skylark.permission.authorization.entity.SysTenant;
 import cn.skylark.permission.authorization.mapper.DataDomainMapper;
+import cn.skylark.permission.authorization.mapper.TenantMapper;
 import cn.skylark.permission.utils.PageRequest;
 import cn.skylark.permission.utils.PageResult;
 import com.alibaba.fastjson.JSON;
@@ -15,8 +17,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -38,6 +42,9 @@ public class DataDomainService {
 
   @Resource
   private DataDomainMapper dataDomainMapper;
+
+  @Resource
+  private TenantMapper tenantMapper;
 
   @Resource
   private TenantPermissionCeilingService tenantPermissionCeilingService;
@@ -71,6 +78,9 @@ public class DataDomainService {
     if (dataDomain.getTenantId() == null) {
       dataDomain.setTenantId(TenantContext.getTenantId());
     }
+    if (!StringUtils.hasText(dataDomain.getCode())) {
+      dataDomain.setCode(generateDataDomainCode(dataDomain.getTenantId()));
+    }
     validateDefinition(dataDomain.getType(), dataDomain.getScopeValue(), dataDomain.getCustomSql());
     return dataDomainMapper.insert(dataDomain);
   }
@@ -82,7 +92,22 @@ public class DataDomainService {
    * @return 更新行数
    */
   public int update(SysDataDomain dataDomain) {
+    // 编码由后端生成并保持稳定；前端不传 code 时保持不变（mapper 侧 COALESCE）。
     return dataDomainMapper.update(dataDomain);
+  }
+
+  private String generateDataDomainCode(Long tenantId) {
+    String tenantPart = tenantId == null ? "0" : String.valueOf(tenantId);
+    // DD_<tenant>_<8hex> keeps length small and uniqueness high.
+    for (int i = 0; i < 5; i++) {
+      String rand = UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+      String code = "DD_" + tenantPart + "_" + rand;
+      if (dataDomainMapper.selectByCodeAndTenantId(code, tenantId) == null) {
+        return code;
+      }
+    }
+    // fallback
+    return "DD_" + tenantPart + "_" + UUID.randomUUID().toString().replace("-", "").toUpperCase();
   }
 
   /**
@@ -102,7 +127,8 @@ public class DataDomainService {
    */
   public List<DataDomainResponseDTO> listDTO() {
     List<SysDataDomain> dataDomains = dataDomainMapper.selectAll();
-    return dataDomains.stream().map(this::convertToDTO).collect(Collectors.toList());
+    Map<Long, String> tenantNames = buildTenantNameMap();
+    return dataDomains.stream().map(d -> convertToDTO(d, tenantNames)).collect(Collectors.toList());
   }
 
   /**
@@ -113,7 +139,7 @@ public class DataDomainService {
    */
   public DataDomainResponseDTO getDTO(Long id) {
     SysDataDomain dataDomain = dataDomainMapper.selectById(id);
-    return dataDomain != null ? convertToDTO(dataDomain) : null;
+    return dataDomain != null ? convertToDTO(dataDomain, buildTenantNameMap()) : null;
   }
 
   /**
@@ -125,7 +151,8 @@ public class DataDomainService {
   public PageResult<DataDomainResponseDTO> pageDTO(PageRequest pageRequest) {
     List<SysDataDomain> records = dataDomainMapper.selectPage(pageRequest.getOffset(), pageRequest.getLimit());
     Long total = dataDomainMapper.countAll();
-    List<DataDomainResponseDTO> dtoList = records.stream().map(this::convertToDTO).collect(Collectors.toList());
+    Map<Long, String> tenantNames = buildTenantNameMap();
+    List<DataDomainResponseDTO> dtoList = records.stream().map(d -> convertToDTO(d, tenantNames)).collect(Collectors.toList());
     return new PageResult<>(dtoList, total, pageRequest.getPage(), pageRequest.getSize());
   }
 
@@ -170,7 +197,8 @@ public class DataDomainService {
       total = dataDomainMapper.countAll();
     }
 
-    List<DataDomainResponseDTO> dtoList = records.stream().map(this::convertToDTO).collect(Collectors.toList());
+    Map<Long, String> tenantNames = buildTenantNameMap();
+    List<DataDomainResponseDTO> dtoList = records.stream().map(d -> convertToDTO(d, tenantNames)).collect(Collectors.toList());
     return new PageResult<>(dtoList, total, pageRequest.getPage(), pageRequest.getSize());
   }
 
@@ -194,30 +222,13 @@ public class DataDomainService {
   }
 
   /**
-   * 租户侧可绑定到角色的数据域列表：
-   * <ul>
-   *   <li>平台上下文：全量；</li>
-   *   <li>正在为「租户管理员」角色绑定时：当前租户下全部数据域（否则管理员从未绑过域时 grantable 恒为空，无法绑第一条）；</li>
-   *   <li>其它角色：仅「租户管理员」已绑定的数据域（天花板）。</li>
-   * </ul>
+   * 角色绑定数据域的可选列表。
    *
-   * @param forRoleId 当前正在授权的目标角色 id；不传则按「非管理员」语义只返回天花板集合
+   * 当前产品需求：与「数据域管理」页面展示保持一致（即返回当前可见的数据域全量列表），
+   * 不再按“租户管理员上限”裁剪。
    */
   public List<DataDomainResponseDTO> listGrantableDTOs(Long forRoleId) {
-    Long tenantId = tenantPermissionCeilingService.resolveTenantIdOrNull();
-    if (tenantId == null) {
-      return listDTO();
-    }
-    Long adminRoleId = tenantPermissionCeilingService.tenantAdminRoleId(tenantId);
-    if (adminRoleId == null) {
-      return Collections.emptyList();
-    }
-    if (forRoleId != null && forRoleId.equals(adminRoleId)) {
-      return listDTO();
-    }
-    return dataDomainMapper.selectByRoleId(adminRoleId).stream()
-        .map(this::convertToDTO)
-        .collect(Collectors.toList());
+    return listDTO();
   }
 
   /**
@@ -280,12 +291,32 @@ public class DataDomainService {
    * @param dataDomain 数据域实体
    * @return 数据域响应DTO
    */
-  private DataDomainResponseDTO convertToDTO(SysDataDomain dataDomain) {
+  private static Map<Long, String> buildTenantNameMapFromList(List<SysTenant> tenants) {
+    Map<Long, String> map = new HashMap<>();
+    if (tenants == null) {
+      return map;
+    }
+    for (SysTenant t : tenants) {
+      if (t != null && t.getId() != null) {
+        map.put(t.getId(), t.getName());
+      }
+    }
+    return map;
+  }
+
+  private Map<Long, String> buildTenantNameMap() {
+    return buildTenantNameMapFromList(tenantMapper.selectAll());
+  }
+
+  private DataDomainResponseDTO convertToDTO(SysDataDomain dataDomain, Map<Long, String> tenantNames) {
     if (dataDomain == null) {
       return null;
     }
     DataDomainResponseDTO dto = new DataDomainResponseDTO();
     BeanUtils.copyProperties(dataDomain, dto);
+    if (dataDomain.getTenantId() != null && tenantNames != null) {
+      dto.setTenantName(tenantNames.get(dataDomain.getTenantId()));
+    }
     return dto;
   }
 }

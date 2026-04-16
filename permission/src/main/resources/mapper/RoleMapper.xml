@@ -7,12 +7,13 @@
         <result column="name" property="name"/>
         <result column="remark" property="remark"/>
         <result column="tenant_id" property="tenantId"/>
+        <result column="is_delete" property="isDelete"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, name, remark, tenant_id, create_time, update_time
+        id, name, remark, tenant_id, is_delete, create_time, update_time
     </sql>
 
     <select id="selectById" parameterType="long" resultMap="RoleResult">
@@ -20,6 +21,7 @@
         <include refid="Base_Column_List"/>
         FROM sys_role
         WHERE id = #{id}
+          AND is_delete = 0
     </select>
 
     <select id="selectByNameAndTenantId" resultMap="RoleResult">
@@ -28,6 +30,7 @@
         FROM sys_role
         WHERE name = #{name}
           AND tenant_id = #{tenantId}
+          AND is_delete = 0
         LIMIT 1
     </select>
 
@@ -36,6 +39,7 @@
         <include refid="Base_Column_List"/>
         FROM sys_role
         WHERE tenant_id = #{tenantId}
+          AND is_delete = 0
         ORDER BY create_time DESC
     </select>
 
@@ -43,6 +47,7 @@
         SELECT
         <include refid="Base_Column_List"/>
         FROM sys_role
+        WHERE is_delete = 0
         ORDER BY create_time DESC
     </select>
 
@@ -50,6 +55,7 @@
         SELECT
         <include refid="Base_Column_List"/>
         FROM sys_role
+        WHERE is_delete = 0
         ORDER BY create_time DESC
         LIMIT #{offset}, #{limit}
     </select>
@@ -59,6 +65,7 @@
         <include refid="Base_Column_List"/>
         FROM sys_role
         <where>
+            is_delete = 0
             <if test="name != null and name != ''">
                 AND name LIKE CONCAT('%', #{name}, '%')
             </if>
@@ -76,12 +83,14 @@
     <select id="countAll" resultType="long">
         SELECT COUNT(*)
         FROM sys_role
+        WHERE is_delete = 0
     </select>
 
     <select id="countWithCondition" resultType="long">
         SELECT COUNT(*)
         FROM sys_role
         <where>
+            is_delete = 0
             <if test="name != null and name != ''">
                 AND name LIKE CONCAT('%', #{name}, '%')
             </if>
@@ -115,9 +124,10 @@
     </update>
 
     <delete id="deleteById" parameterType="long">
-        DELETE
-        FROM sys_role
+        UPDATE sys_role
+        SET is_delete = 1
         WHERE id = #{id}
+          AND is_delete = 0
     </delete>
 
 </mapper>

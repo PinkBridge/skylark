@@ -1,6 +1,7 @@
 package cn.skylark.permission.authorization.controller;
 
 import cn.skylark.permission.authorization.dto.ChangePasswordDTO;
+import cn.skylark.permission.authorization.dto.AdminResetPasswordDTO;
 import cn.skylark.permission.authorization.dto.CreateUserDTO;
 import cn.skylark.permission.authorization.dto.UpdateMyProfileDTO;
 import cn.skylark.permission.authorization.dto.UpdateUserDTO;
@@ -12,10 +13,8 @@ import cn.skylark.permission.authorization.entity.SysUser;
 import cn.skylark.permission.authorization.dto.ResolvedDataScopeDTO;
 import cn.skylark.permission.authorization.service.DataDomainResolutionService;
 import cn.skylark.permission.authorization.service.UserService;
-import cn.skylark.permission.utils.PageRequest;
 import cn.skylark.permission.utils.PageResult;
 import cn.skylark.permission.utils.Ret;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -187,6 +186,26 @@ public class UserController {
   @PostMapping("/{id}/roles:bind")
   public Ret<Void> bindRoles(@PathVariable Long id, @RequestBody List<Long> roleIds) {
     userService.bindRoles(id, roleIds);
+    return Ret.ok();
+  }
+
+  /**
+   * 管理员重置指定用户密码（无需旧密码）
+   */
+  @PutMapping("/{id}/password:reset")
+  public Ret<Void> adminResetPassword(@PathVariable Long id, @RequestBody AdminResetPasswordDTO body) {
+    if (body == null || !StringUtils.hasText(body.getNewPassword())) {
+      return Ret.fail(400, "password.new.required");
+    }
+    String pw = body.getNewPassword().trim();
+    if (pw.length() < 6 || pw.length() > 20) {
+      return Ret.fail(400, "password.length.invalid");
+    }
+    SysUser user = userService.get(id);
+    if (user == null) {
+      return Ret.fail(404, "user.not.found");
+    }
+    userService.adminResetPassword(id, pw);
     return Ret.ok();
   }
 

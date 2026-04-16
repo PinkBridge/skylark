@@ -6,6 +6,7 @@ import cn.skylark.permission.authorization.mapper.ApiMapper;
 import cn.skylark.permission.authorization.mapper.MenuMapper;
 import cn.skylark.permission.authorization.mapper.PermissionAuditMapper;
 import cn.skylark.permission.authorization.mapper.RoleMapper;
+import cn.skylark.permission.authorization.mapper.TenantAdminBindingMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -39,6 +40,26 @@ public class TenantRoleReconcileService {
 
   @Resource
   private PermissionAuditMapper permissionAuditMapper;
+
+  @Resource
+  private TenantAdminBindingMapper tenantAdminBindingMapper;
+
+  /**
+   * 当「权限上限角色」的菜单/API 绑定发生变化时调用：按绑定表反查租户，对每个租户执行子角色收敛。
+   * 不依赖请求头里的租户上下文。
+   */
+  public void reconcileTenantsWhereCeilingRole(Long ceilingRoleId) {
+    if (ceilingRoleId == null) {
+      return;
+    }
+    List<Long> tenantIds = tenantAdminBindingMapper.selectTenantIdsByCeilingRoleId(ceilingRoleId);
+    if (tenantIds == null || tenantIds.isEmpty()) {
+      return;
+    }
+    for (Long tenantId : tenantIds) {
+      reconcileTenant(tenantId);
+    }
+  }
 
   @Transactional(rollbackFor = Exception.class)
   public ReconcileResult reconcileTenant(Long tenantId) {

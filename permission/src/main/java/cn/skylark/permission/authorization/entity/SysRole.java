@@ -10,6 +10,7 @@ public class SysRole {
   private String name;
   private String remark;
   private Long tenantId;
+  private Boolean isDelete;
   private LocalDateTime createTime;
   private LocalDateTime updateTime;
 }

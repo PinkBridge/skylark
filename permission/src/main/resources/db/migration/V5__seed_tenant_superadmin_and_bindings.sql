@@ -8,6 +8,7 @@ TRUNCATE TABLE `sys_permission_audit`;
 TRUNCATE TABLE `sys_operation_log`;
 TRUNCATE TABLE `sys_login_log`;
 TRUNCATE TABLE `sys_resource`;
+TRUNCATE TABLE `sys_data_domain`;
 TRUNCATE TABLE `sys_user`;
 TRUNCATE TABLE `sys_role`;
 TRUNCATE TABLE `sys_organization`;
@@ -45,6 +46,15 @@ INSERT INTO `sys_user`(
 INSERT INTO `sys_user_role`(`user_id`, `role_id`) VALUES (1, 1);
 
 INSERT INTO `sys_tenant_admin_binding`(`tenant_id`, `user_id`, `role_id`) VALUES (1, 1, 1);
+
+-- Default data domain: ALL (view all data), and bind it to super admin role.
+INSERT INTO `sys_data_domain`(
+  `id`, `name`, `code`, `type`, `scope_value`, `custom_sql`, `description`, `tenant_id`, `enabled`
+) VALUES (
+  1, '全部数据', 'ALL', 'ALL', NULL, NULL, '查看全部数据', 1, 1
+);
+
+INSERT INTO `sys_role_data_domain`(`role_id`, `data_domain_id`) VALUES (1, 1);
 
 INSERT INTO `sys_role_menu`(`role_id`, `menu_id`)
 SELECT 1, m.`id` FROM `sys_menu` m;

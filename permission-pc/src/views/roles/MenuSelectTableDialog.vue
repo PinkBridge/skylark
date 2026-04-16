@@ -157,9 +157,6 @@ const handleSelect = (selection, row) => {
     return
   }
   const selected = selection.some((r) => r.id === row.id)
-  if (!selected) {
-    return
-  }
   const descendants = collectDescendantNodes(row)
   if (descendants.length === 0) {
     return
@@ -168,7 +165,7 @@ const handleSelect = (selection, row) => {
   nextTick(() => {
     try {
       for (const n of descendants) {
-        table.toggleRowSelection(n, true)
+        table.toggleRowSelection(n, selected)
       }
     } finally {
       nextTick(() => {

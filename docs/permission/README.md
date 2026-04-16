@@ -10,5 +10,6 @@ This manual explains how to **initialize** and **use** the `permission` subsyste
 - [02. Tenant management](02-tenant.md)
 - [03. Organization & users](03-org-user.md)
 - [04. Roles & authorization (Menu / API / RBAC)](04-role-menu-api.md)
-- [05. Logs / whitelist / FAQ](05-audit-faq.md)
+- [05. Data domains (data scope)](05-data-domains.md)
+- [06. Logs / whitelist / FAQ](05-audit-faq.md)
 

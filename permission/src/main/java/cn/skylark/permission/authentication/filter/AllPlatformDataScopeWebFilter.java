@@ -45,6 +45,10 @@ public class AllPlatformDataScopeWebFilter extends OncePerRequestFilter {
         if (scope.isAllPlatform()) {
           TenantContext.setAllPlatformDataScope(true);
         }
+        TenantContext.setDataScopeWholeTenant(scope.isWholeTenant());
+        TenantContext.setDataScopeSelfOnly(scope.isSelfOnly());
+        TenantContext.setDataScopeOrgIds(scope.getOrgIds());
+        TenantContext.setDataScopeUserId(user.getId());
       }
     }
     filterChain.doFilter(request, response);

@@ -11,6 +11,7 @@ public class SysPlatformConfig {
   private String configValue;
   private String valueType;
   private String description;
+  private Boolean isDelete;
   private LocalDateTime createTime;
   private LocalDateTime updateTime;
 }

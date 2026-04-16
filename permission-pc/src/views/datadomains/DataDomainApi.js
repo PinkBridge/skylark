@@ -42,12 +42,10 @@ export function deleteDataDomainById(id) {
 }
 
 /**
- * 租户侧可授权数据域；平台侧为全量。
- * forRoleId 为当前正在绑定的角色 id：若为租户管理员角色则返回本租户全部数据域，否则返回天花板内集合。
- * GET /api/permission/data-domains/grantable?forRoleId=
+ * Role binding list should match the Data Domains page.
+ * GET /api/permission/data-domains/grantable
  */
-export function getGrantableDataDomains(forRoleId) {
-  const params = forRoleId != null && forRoleId !== '' ? { forRoleId } : {}
-  return http.get(`${DATA_DOMAIN_PREFIX}/grantable`, params)
+export function getGrantableDataDomains() {
+  return http.get(`${DATA_DOMAIN_PREFIX}/grantable`)
 }
 

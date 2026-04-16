@@ -26,6 +26,19 @@ public class MenuService {
   @Resource
   private TenantRolePermissionGuard tenantRolePermissionGuard;
 
+  @Resource
+  private TenantRoleReconcileService tenantRoleReconcileService;
+
+  /**
+   * 若被修改的角色出现在 sys_tenant_admin_binding.role_id 中，则对关联到的每个租户收敛子角色菜单/API。
+   */
+  private void maybeReconcileAfterCeilingRoleMenusChanged(Long roleId) {
+    if (roleId == null) {
+      return;
+    }
+    tenantRoleReconcileService.reconcileTenantsWhereCeilingRole(roleId);
+  }
+
   public SysMenu get(Long id) {
     return menuMapper.selectById(id);
   }
@@ -59,6 +72,7 @@ public class MenuService {
     if (menuIds != null && !menuIds.isEmpty()) {
       menuMapper.bindRoleMenus(roleId, menuIds);
     }
+    maybeReconcileAfterCeilingRoleMenusChanged(roleId);
   }
 
   /**
@@ -87,6 +101,7 @@ public class MenuService {
         results.put(menuId, true);
       }
     }
+    maybeReconcileAfterCeilingRoleMenusChanged(roleId);
     return results;
   }
 

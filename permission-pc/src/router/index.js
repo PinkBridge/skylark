@@ -2,12 +2,22 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { isAuthenticated } from '../utils/auth'
 import { getAuthorizationUrl } from '../api/oauth'
 import i18n from '@/i18n/index'
+import { getPlatformInitState } from '@/api/init'
 
 // route configuration
 const routes = [
   {
     path: '/',
     redirect: '/home'
+  },
+  {
+    path: '/init',
+    name: 'PlatformInit',
+    component: () => import('@/views/PlatformInit.vue'),
+    meta: {
+      title: 'Initialize',
+      requiresAuth: false
+    }
   },
   {
     path: '/welcome',
@@ -171,8 +181,12 @@ const router = createRouter({
   routes
 })
 
+let initStateCache = null
+let initStateCacheAt = 0
+const INIT_STATE_TTL_MS = 5000
+
 // route guard - control access permission
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const titleKey = to.meta.titleI18nKey
   document.title = titleKey ? i18n.global.t(titleKey) : (to.meta.title || 'Permission App')
 
@@ -185,15 +199,29 @@ router.beforeEach((to, from, next) => {
     return
   }
 
+  // Platform initialization guard (anonymous).
+  // If not initialized, force to /init (except itself).
+  try {
+    const now = Date.now()
+    if (!initStateCache || (now - initStateCacheAt) > INIT_STATE_TTL_MS) {
+      initStateCache = await getPlatformInitState()
+      initStateCacheAt = now
+    }
+    if (initStateCache && initStateCache.initialized === false && to.path !== '/init') {
+      next({ name: 'PlatformInit' })
+      return
+    }
+    if (initStateCache && initStateCache.initialized === true && to.path === '/init') {
+      next({ name: 'Welcome' })
+      return
+    }
+  } catch (e) {
+    // If init-state query fails, continue to avoid blocking routing.
+  }
+
   if (requiresAuth && !authenticated) {
     const authUrl = getAuthorizationUrl()
     window.location.href = authUrl
-    return
-  }
-
-  // Avoid redirect loop: /home should land on a concrete business page.
-  if (to.name === 'Home' && authenticated && from.name !== 'UserDataList') {
-    next({ name: 'UserDataList' })
     return
   }
 

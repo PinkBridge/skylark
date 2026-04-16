@@ -83,6 +83,11 @@ public class SysOrganization {
   private Long tenantId;
 
   /**
+   * 软删除标记：0-未删除，1-已删除
+   */
+  private Boolean isDelete;
+
+  /**
    * 创建时间
    */
   private LocalDateTime createTime;

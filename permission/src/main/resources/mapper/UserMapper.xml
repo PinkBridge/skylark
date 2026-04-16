@@ -17,6 +17,7 @@
         <result column="address" property="address" jdbcType="VARCHAR"/>
         <result column="tenant_id" property="tenantId" jdbcType="BIGINT"/>
         <result column="org_id" property="orgId" jdbcType="BIGINT"/>
+        <result column="is_delete" property="isDelete" jdbcType="TINYINT"/>
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
         <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
     </resultMap>
@@ -30,7 +31,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, username, password, enabled, gender, avatar, phone, email, status, province, city, address, tenant_id, org_id, create_time, update_time
+        id, username, password, enabled, gender, avatar, phone, email, status, province, city, address, tenant_id, org_id, is_delete, create_time, update_time
     </sql>
 
     <select id="findByUsername" resultMap="BaseResultMap">
@@ -39,6 +40,7 @@
         FROM sys_user
         WHERE username = #{username}
         AND enabled = 1
+        AND is_delete = 0
     </select>
 
     <select id="selectById" parameterType="long" resultMap="BaseResultMap">
@@ -46,12 +48,14 @@
         <include refid="Base_Column_List"/>
         FROM sys_user
         WHERE id = #{id}
+          AND is_delete = 0
     </select>
 
     <select id="selectAll" resultMap="BaseResultMap">
         SELECT
         <include refid="Base_Column_List"/>
         FROM sys_user
+        WHERE is_delete = 0
         ORDER BY create_time DESC
     </select>
 
@@ -80,8 +84,10 @@
     </update>
 
     <delete id="deleteById" parameterType="long">
-        DELETE FROM sys_user
+        UPDATE sys_user
+        SET is_delete = 1
         WHERE id = #{id}
+          AND is_delete = 0
     </delete>
 
     <select id="selectRolesByUserId" parameterType="long" resultMap="RoleResultMap">
@@ -93,33 +99,40 @@
         FROM sys_role r
                  INNER JOIN sys_user_role ur ON ur.role_id = r.id
         WHERE ur.user_id = #{userId}
+          AND ur.is_delete = 0
+          AND r.is_delete = 0
         ORDER BY r.id ASC
     </select>
 
     <delete id="deleteUserRoles" parameterType="long">
-        DELETE
-        FROM sys_user_role
+        UPDATE sys_user_role
+        SET is_delete = 1
         WHERE user_id = #{userId}
+          AND is_delete = 0
     </delete>
 
     <insert id="insertUserRoles">
-        INSERT INTO sys_user_role(user_id, role_id)
+        INSERT INTO sys_user_role(user_id, role_id, is_delete)
         VALUES
         <foreach collection="roleIds" item="roleId" separator=",">
-            (#{userId}, #{roleId})
+            (#{userId}, #{roleId}, 0)
         </foreach>
+        ON DUPLICATE KEY UPDATE
+            is_delete = 0
     </insert>
 
     <update id="updatePassword">
         UPDATE sys_user
         SET password = #{password}
         WHERE id = #{userId}
+          AND is_delete = 0
     </update>
 
     <update id="updateTenantIdByUserId">
         UPDATE sys_user
         SET tenant_id = #{tenantId}
         WHERE id = #{userId}
+          AND is_delete = 0
           AND (tenant_id IS NULL OR tenant_id &lt;&gt; #{tenantId})
     </update>
 
@@ -127,6 +140,7 @@
         SELECT
         <include refid="Base_Column_List"/>
         FROM sys_user
+        WHERE is_delete = 0
         ORDER BY create_time DESC
         LIMIT #{offset}, #{limit}
     </select>
@@ -136,6 +150,7 @@
         <include refid="Base_Column_List"/>
         FROM sys_user
         <where>
+            is_delete = 0
             <if test="username != null and username != ''">
                 AND username LIKE CONCAT('%', #{username}, '%')
             </if>
@@ -156,12 +171,14 @@
     <select id="countAll" resultType="long">
         SELECT COUNT(*)
         FROM sys_user
+        WHERE is_delete = 0
     </select>
 
     <select id="countWithCondition" resultType="long">
         SELECT COUNT(*)
         FROM sys_user
         <where>
+            is_delete = 0
             <if test="username != null and username != ''">
                 AND username LIKE CONCAT('%', #{username}, '%')
             </if>
@@ -180,7 +197,7 @@
     <update id="updateUserInfo">
         UPDATE sys_user
         SET username = #{user.username},
-            enabled  = #{user.enabled},
+            enabled  = COALESCE(#{user.enabled}, enabled),
             gender = #{user.gender},
             avatar = #{user.avatar},
             phone = #{user.phone},
@@ -191,6 +208,7 @@
             address = #{user.address},
             org_id = #{user.orgId}
         WHERE id = #{userId}
+          AND is_delete = 0
     </update>
 
 </mapper>

@@ -24,6 +24,9 @@ services:
     build:
       context: ./gateway
       dockerfile: Dockerfile
+      args:
+        MAVEN_BUILD_IMAGE: ${MAVEN_BUILD_IMAGE:-maven:3.9-eclipse-temurin-17}
+        JRE_IMAGE: ${JRE_IMAGE:-eclipse-temurin:17-jre-alpine}
     container_name: gateway
     restart: unless-stopped
     ports:
@@ -51,6 +54,9 @@ services:
     build:
       context: ./permission
       dockerfile: Dockerfile
+      args:
+        MAVEN_BUILD_IMAGE: ${MAVEN_BUILD_IMAGE:-maven:3.9-eclipse-temurin-17}
+        JRE_IMAGE: ${JRE_IMAGE:-eclipse-temurin:17-jre-alpine}
     container_name: permission
     restart: unless-stopped
     ports:

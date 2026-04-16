@@ -91,6 +91,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .antMatchers("/oauth/authorize").authenticated()
             .antMatchers("/oauth/**").permitAll()
             .antMatchers("/api/permission/tenants/domain/**").permitAll()
+            .antMatchers("/api/permission/platform-init/**").permitAll()
+            // Init wizard uploads logo before login.
+            .antMatchers(HttpMethod.POST, "/api/permission/resources/upload").permitAll()
             // 登录前页面（如 /welcome）展示租户 logo：<img> 无法带 Token，需匿名可读已上传文件
             .antMatchers(HttpMethod.GET, "/api/permission/resources/preview/**").permitAll()
             .antMatchers(HttpMethod.GET, "/api/permission/resources/download/**").permitAll()

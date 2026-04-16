@@ -34,6 +34,9 @@
             {{ permLabelName('perm.users.detail', 'DetailLabel') }}
           </el-button>
           <el-button link type="primary" size="default" @click="handleEdit(row)" v-permission="'perm.users.edit'">{{ permLabelName('perm.users.edit', 'EditLabel') }}</el-button>
+          <el-button link type="primary" size="default" @click="handleResetPassword(row)" v-permission="'perm.users.password.reset'">
+            {{ permLabelName('perm.users.password.reset', 'AdminResetPasswordLabel') }}
+          </el-button>
           <el-button link type="primary" size="default" @click="handleDelete(row.id)" v-permission="'perm.users.delete'">{{ permLabelName('perm.users.delete', 'DeleteLabel') }}</el-button>
         </template>
       </el-table-column>
@@ -55,9 +58,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getUserPage, deleteUserById } from '@/views/users/UserApi'
+import { getUserPage, deleteUserById, adminResetUserPassword } from '@/views/users/UserApi'
 import { Refresh, Plus } from '@element-plus/icons-vue'
-import { ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import UserSearchForm from '@/views/users/UserSearchForm.vue'
 import UserDetailDialog from '@/views/users/UserDetailDialog.vue'
 import UserCreateDialog from '@/views/users/UserCreateDialog.vue'
@@ -155,6 +158,28 @@ const handleDetail = (row) => {
 const handleDetailConfirm = () => {
   detailRow.value = {}
   detailDialogVisible.value = false
+}
+
+const handleResetPassword = (row) => {
+  if (!row?.id) return
+  ElMessageBox.prompt(t('AdminResetPasswordPrompt'), t('AdminResetPasswordTitle'), {
+    confirmButtonText: t('ConfirmButtonText'),
+    cancelButtonText: t('CancelButtonText'),
+    inputType: 'password',
+    inputPlaceholder: t('NewPasswordPlaceholder'),
+    inputPattern: /^.{6,20}$/,
+    inputErrorMessage: t('PasswordLengthError'),
+  })
+    .then(({ value }) => adminResetUserPassword(row.id, value))
+    .then(() => {
+      ElMessage.success(t('AdminResetPasswordSuccess'))
+    })
+    .catch((err) => {
+      // cancel => ignore
+      if (err && err.message) {
+        ElMessage.error(err.message)
+      }
+    })
 }
 
 // delete record

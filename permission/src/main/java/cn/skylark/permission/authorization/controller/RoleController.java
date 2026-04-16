@@ -103,8 +103,12 @@ public class RoleController {
 
   @PostMapping("/{id}/menus:bind")
   public Ret<Void> bindMenus(@PathVariable Long id, @RequestBody List<Long> menuIds) {
-    roleService.bindMenus(id, menuIds);
-    return Ret.ok();
+    try {
+      roleService.bindMenus(id, menuIds);
+      return Ret.ok();
+    } catch (IllegalArgumentException e) {
+      return Ret.fail(400, e.getMessage());
+    }
   }
 
   @GetMapping("/{id}/apis")
@@ -114,8 +118,12 @@ public class RoleController {
 
   @PostMapping("/{id}/apis:bind")
   public Ret<Void> bindApis(@PathVariable Long id, @RequestBody List<Long> apiIds) {
-    roleService.bindApis(id, apiIds);
-    return Ret.ok();
+    try {
+      roleService.bindApis(id, apiIds);
+      return Ret.ok();
+    } catch (IllegalArgumentException e) {
+      return Ret.fail(400, e.getMessage());
+    }
   }
 
   @GetMapping("/{id}/data-domains")
@@ -143,8 +151,12 @@ public class RoleController {
    */
   @PostMapping("/{roleId}/apis/{apiId}:toggle")
   public Ret<Boolean> toggleRoleApi(@PathVariable Long roleId, @PathVariable Long apiId) {
-    boolean added = apiService.toggleRoleApiBinding(roleId, apiId);
-    return Ret.data(added);
+    try {
+      boolean added = apiService.toggleRoleApiBinding(roleId, apiId);
+      return Ret.data(added);
+    } catch (IllegalArgumentException e) {
+      return Ret.fail(400, e.getMessage());
+    }
   }
 
   /**
@@ -161,7 +173,11 @@ public class RoleController {
     if (request == null || request.getMenuIds() == null || request.getMenuIds().isEmpty()) {
       return Ret.fail(400, "menuIds.required");
     }
-    Map<Long, Boolean> results = menuService.toggleRoleMenuBindings(roleId, request.getMenuIds());
-    return Ret.data(results);
+    try {
+      Map<Long, Boolean> results = menuService.toggleRoleMenuBindings(roleId, request.getMenuIds());
+      return Ret.data(results);
+    } catch (IllegalArgumentException e) {
+      return Ret.fail(400, e.getMessage());
+    }
   }
 }

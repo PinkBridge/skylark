@@ -81,6 +81,23 @@ const rules = computed(() => {
     name: [
       { required: true, message: t('NameRequired'), trigger: 'blur' }
     ],
+    domain: [
+      {
+        validator: (_rule, value, callback) => {
+          const v = (value || '').toString().trim()
+          if (!v) {
+            callback()
+            return
+          }
+          if (v.includes(':')) {
+            callback(new Error(t('DomainPortNotAllowed')))
+            return
+          }
+          callback()
+        },
+        trigger: 'blur'
+      }
+    ],
     status: [
       { required: true, message: t('StatusRequired'), trigger: 'change' }
     ],

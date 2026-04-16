@@ -17,13 +17,14 @@
         <result column="description" property="description" jdbcType="VARCHAR"/>
         <result column="status" property="status" jdbcType="VARCHAR"/>
         <result column="tenant_id" property="tenantId" jdbcType="BIGINT"/>
+        <result column="is_delete" property="isDelete" jdbcType="TINYINT"/>
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
         <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
     </resultMap>
 
     <sql id="Base_Column_List">
         id, name, code, parent_id, type, level, sort, leader, phone, email, address,
-        description, status, tenant_id, create_time, update_time
+        description, status, tenant_id, is_delete, create_time, update_time
     </sql>
 
     <select id="selectById" parameterType="long" resultMap="BaseResultMap">
@@ -31,6 +32,7 @@
         <include refid="Base_Column_List"/>
         FROM sys_organization
         WHERE id = #{id}
+          AND is_delete = 0
     </select>
 
     <select id="selectByCode" parameterType="string" resultMap="BaseResultMap">
@@ -38,12 +40,14 @@
         <include refid="Base_Column_List"/>
         FROM sys_organization
         WHERE code = #{code}
+          AND is_delete = 0
     </select>
 
     <select id="selectAll" resultMap="BaseResultMap">
         SELECT
         <include refid="Base_Column_List"/>
         FROM sys_organization
+        WHERE is_delete = 0
         ORDER BY create_time DESC
     </select>
 
@@ -51,6 +55,7 @@
         SELECT
         <include refid="Base_Column_List"/>
         FROM sys_organization
+        WHERE is_delete = 0
         ORDER BY create_time DESC
         LIMIT #{offset}, #{limit}
     </select>
@@ -60,6 +65,7 @@
         <include refid="Base_Column_List"/>
         FROM sys_organization
         <where>
+            is_delete = 0
             <if test="name != null and name != ''">
                 AND name LIKE CONCAT('%', #{name}, '%')
             </if>
@@ -89,12 +95,14 @@
     <select id="countAll" resultType="long">
         SELECT COUNT(*)
         FROM sys_organization
+        WHERE is_delete = 0
     </select>
 
     <select id="countWithCondition" resultType="long">
         SELECT COUNT(*)
         FROM sys_organization
         <where>
+            is_delete = 0
             <if test="name != null and name != ''">
                 AND name LIKE CONCAT('%', #{name}, '%')
             </if>
@@ -165,8 +173,10 @@
     </update>
 
     <delete id="deleteById" parameterType="long">
-        DELETE FROM sys_organization
+        UPDATE sys_organization
+        SET is_delete = 1
         WHERE id = #{id}
+          AND is_delete = 0
     </delete>
 
 </mapper>

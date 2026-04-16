@@ -33,9 +33,7 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="tenantId" :label="t('TenantIdLabel')" width="120" />
-      <el-table-column prop="scopeValue" :label="t('ScopeValueLabel')" min-width="200" show-overflow-tooltip />
-      <el-table-column prop="customSql" :label="t('CustomSqlLabel')" min-width="200" show-overflow-tooltip />
+      <el-table-column prop="tenantName" :label="t('TenantNameLabel')" min-width="140" show-overflow-tooltip />
       <el-table-column prop="description" :label="t('DescriptionLabel')" min-width="200" show-overflow-tooltip />
       <el-table-column prop="createTime" :label="t('CreatedAtLabel')" width="180" />
       <el-table-column prop="updateTime" :label="t('UpdatedAtLabel')" width="180" />

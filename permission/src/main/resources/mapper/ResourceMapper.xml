@@ -13,12 +13,13 @@
         <result column="url" property="url" jdbcType="VARCHAR"/>
         <result column="description" property="description" jdbcType="VARCHAR"/>
         <result column="tenant_id" property="tenantId" jdbcType="BIGINT"/>
+        <result column="is_delete" property="isDelete" jdbcType="TINYINT"/>
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
         <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, name, original_name, file_path, file_type, file_size, mime_type, url, description, tenant_id, create_time, update_time
+        id, name, original_name, file_path, file_type, file_size, mime_type, url, description, tenant_id, is_delete, create_time, update_time
     </sql>
 
     <select id="selectById" parameterType="long" resultMap="BaseResultMap">
@@ -26,12 +27,14 @@
         <include refid="Base_Column_List"/>
         FROM sys_resource
         WHERE id = #{id}
+          AND is_delete = 0
     </select>
 
     <select id="selectAll" resultMap="BaseResultMap">
         SELECT
         <include refid="Base_Column_List"/>
         FROM sys_resource
+        WHERE is_delete = 0
         ORDER BY create_time DESC
     </select>
 
@@ -39,6 +42,7 @@
         SELECT
         <include refid="Base_Column_List"/>
         FROM sys_resource
+        WHERE is_delete = 0
         ORDER BY create_time DESC
         LIMIT #{offset}, #{limit}
     </select>
@@ -48,6 +52,7 @@
         <include refid="Base_Column_List"/>
         FROM sys_resource
         <where>
+            is_delete = 0
             <if test="name != null and name != ''">
                 AND name LIKE CONCAT('%', #{name}, '%')
             </if>
@@ -68,12 +73,14 @@
     <select id="countAll" resultType="long">
         SELECT COUNT(*)
         FROM sys_resource
+        WHERE is_delete = 0
     </select>
 
     <select id="countWithCondition" resultType="long">
         SELECT COUNT(*)
         FROM sys_resource
         <where>
+            is_delete = 0
             <if test="name != null and name != ''">
                 AND name LIKE CONCAT('%', #{name}, '%')
             </if>
@@ -121,8 +128,10 @@
     </update>
 
     <delete id="deleteById" parameterType="long">
-        DELETE FROM sys_resource
+        UPDATE sys_resource
+        SET is_delete = 1
         WHERE id = #{id}
+          AND is_delete = 0
     </delete>
 
 </mapper>

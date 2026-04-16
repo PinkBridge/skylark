@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.skylark.permission.authorization.mapper.OauthClientMetaMapper">
+
+    <resultMap id="BaseResult" type="cn.skylark.permission.authorization.entity.SysOauthClientMeta">
+        <id column="client_id" property="clientId"/>
+        <result column="name" property="name"/>
+        <result column="port" property="port"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        client_id, name, port, create_time, update_time
+    </sql>
+
+    <select id="selectByClientId" resultMap="BaseResult">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_oauth_client_meta
+        WHERE client_id = #{clientId}
+        LIMIT 1
+    </select>
+</mapper>
+

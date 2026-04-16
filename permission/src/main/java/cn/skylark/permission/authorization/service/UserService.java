@@ -159,6 +159,19 @@ public class UserService {
   }
 
   /**
+   * 管理员重置用户密码：不校验旧密码。
+   */
+  public void adminResetPassword(Long userId, String newPassword) {
+    if (userId == null || !StringUtils.hasText(newPassword)) {
+      throw new IllegalArgumentException("password.new.required");
+    }
+    int updated = userMapper.updatePassword(userId, newPassword);
+    if (updated <= 0) {
+      throw new IllegalArgumentException("user.not.found");
+    }
+  }
+
+  /**
    * 分页查询用户列表
    *
    * @param pageRequest 分页请求参数

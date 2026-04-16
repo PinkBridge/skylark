@@ -109,6 +109,8 @@ public class TenantRolePermissionGuard {
       return;
     }
     Set<Long> allowed = ceilingService.allowedDataDomainIds(tenantId);
+    // 管理员角色若未绑定任何数据域，allowed 为空，此时不限制子角色可绑集合（仍校验数据域属于本租户）。
+    boolean enforceAdminCeiling = !allowed.isEmpty();
     for (Long id : dataDomainIds) {
       if (id == null) {
         continue;
@@ -117,7 +119,7 @@ public class TenantRolePermissionGuard {
       if (d == null || d.getTenantId() == null || !tenantId.equals(d.getTenantId())) {
         throw new IllegalArgumentException("data.domain.tenant.mismatch");
       }
-      if (!allowed.contains(id)) {
+      if (enforceAdminCeiling && !allowed.contains(id)) {
         throw new IllegalArgumentException("role.perms.exceed.tenant.admin");
       }
     }

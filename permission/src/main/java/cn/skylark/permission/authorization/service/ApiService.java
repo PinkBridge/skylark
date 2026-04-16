@@ -26,6 +26,16 @@ public class ApiService {
   @Resource
   private TenantRolePermissionGuard tenantRolePermissionGuard;
 
+  @Resource
+  private TenantRoleReconcileService tenantRoleReconcileService;
+
+  private void maybeReconcileAfterCeilingRoleApisChanged(Long roleId) {
+    if (roleId == null) {
+      return;
+    }
+    tenantRoleReconcileService.reconcileTenantsWhereCeilingRole(roleId);
+  }
+
   public SysApi get(Long id) {
     return apiMapper.selectById(id);
   }
@@ -56,6 +66,7 @@ public class ApiService {
     if (apiIds != null && !apiIds.isEmpty()) {
       apiMapper.bindRoleApis(roleId, apiIds);
     }
+    maybeReconcileAfterCeilingRoleApisChanged(roleId);
   }
 
   /**
@@ -72,10 +83,12 @@ public class ApiService {
     if (exists > 0) {
       // 存在关联，删除
       apiMapper.deleteRoleApiBinding(roleId, apiId);
+      maybeReconcileAfterCeilingRoleApisChanged(roleId);
       return false;
     } else {
       // 不存在关联，添加
       apiMapper.insertRoleApiBinding(roleId, apiId);
+      maybeReconcileAfterCeilingRoleApisChanged(roleId);
       return true;
     }
   }

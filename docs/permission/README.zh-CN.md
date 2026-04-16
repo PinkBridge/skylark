@@ -10,5 +10,6 @@
 - [02. 租户管理](02-tenant.zh-CN.md)
 - [03. 组织与用户](03-org-user.zh-CN.md)
 - [04. 角色与授权（菜单 / API / RBAC）](04-role-menu-api.zh-CN.md)
-- [05. 日志 / 白名单 / FAQ](05-audit-faq.zh-CN.md)
+- [05. 数据域（数据范围）](05-data-domains.zh-CN.md)
+- [06. 日志 / 白名单 / FAQ](05-audit-faq.zh-CN.md)
 
