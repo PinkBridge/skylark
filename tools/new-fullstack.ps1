@@ -34,9 +34,14 @@ $svcArgs = @{
   ServiceName = $ServiceName
   Port        = $BackendPort
   BasePackage = $BasePackage
+  WebAppName  = $WebAppName
+  FrontendPort = $FrontendPort
 }
 if (![string]::IsNullOrWhiteSpace($ArtifactId)) {
   $svcArgs.ArtifactId = $ArtifactId
+}
+if (![string]::IsNullOrWhiteSpace($Title)) {
+  $svcArgs.AppDisplayName = $Title
 }
 
 Write-Host "==> Service: $ServiceName (port $BackendPort)"

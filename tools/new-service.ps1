@@ -6,7 +6,23 @@ param(
 
   [string]$BasePackage = "cn.skylark",
 
-  [int]$Port = 18080
+  [int]$Port = 18080,
+
+  # Optional: also register an "app" record for the corresponding frontend.
+  # This writes to skylark_permission.oauth_client_details + skylark_permission.sys_oauth_client_meta.
+  [string]$WebAppName,
+
+  [int]$FrontendPort = 9531,
+
+  [string]$AppDisplayName,
+
+  [string]$MysqlContainerName = "mysql",
+
+  [string]$MysqlRootPassword = "123456",
+
+  [string]$PermissionDbName = "skylark_permission",
+
+  [string]$OauthClientSecret = "112233"
 )
 
 $ErrorActionPreference = "Stop"
@@ -31,6 +47,52 @@ function Ensure-NotExists([string]$Path) {
   }
 }
 
+$script:sqlAppUpsert = $null
+function Register-OauthAppRecordIfPossible() {
+  if ([string]::IsNullOrWhiteSpace($script:sqlAppUpsert)) {
+    return
+  }
+
+  # Best-effort: only run if docker and target container exist.
+  try {
+    $null = Get-Command docker -ErrorAction Stop
+  } catch {
+    Write-Host "Skip app registration: docker not found. SQL to run manually:"
+    Write-Host $script:sqlAppUpsert
+    return
+  }
+
+  $containerExists = $false
+  try {
+    $inspect = docker inspect $MysqlContainerName 2>$null
+    if ($LASTEXITCODE -eq 0 -and $inspect) {
+      $containerExists = $true
+    }
+  } catch {
+    $containerExists = $false
+  }
+
+  if (-not $containerExists) {
+    Write-Host "Skip app registration: container '$MysqlContainerName' not found. SQL to run manually:"
+    Write-Host $script:sqlAppUpsert
+    return
+  }
+
+  try {
+    # Execute SQL inside container.
+    docker exec $MysqlContainerName mysql -uroot "-p$MysqlRootPassword" $PermissionDbName -e $script:sqlAppUpsert | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+      Write-Host "Registered app record in DB: $WebAppName (port=$FrontendPort)"
+      return
+    }
+  } catch {
+    # fallthrough
+  }
+
+  Write-Host "Skip app registration: failed to write DB. SQL to run manually:"
+  Write-Host $script:sqlAppUpsert
+}
+
 $dockerComposePath = $null
 $dockerComposeRaw = $null
 function Load-DockerComposeIfExists() {
@@ -50,6 +112,14 @@ if (!(Test-Path $templateDir)) {
 
 if ([string]::IsNullOrWhiteSpace($ArtifactId)) {
   $ArtifactId = $ServiceName
+}
+
+$defaultWebAppName = "$ServiceName-web"
+if ([string]::IsNullOrWhiteSpace($WebAppName)) {
+  $WebAppName = $defaultWebAppName
+}
+if ([string]::IsNullOrWhiteSpace($AppDisplayName)) {
+  $AppDisplayName = $WebAppName
 }
 
 $targetDir = Join-Path $repoRoot "service\$ServiceName"
@@ -158,4 +228,42 @@ Write-Host "Created service at: $targetDir"
 Write-Host "Next:"
 Write-Host "  mvn -q -f `"$(Join-Path $repoRoot 'service\pom.xml')`" install -pl $ServiceName -am"
 Write-Host "  mvn -q -f `"$targetDir\pom.xml`" test"
+
+# Also register the corresponding OAuth client + app meta (best-effort).
+# The frontend generator uses VUE_APP_CLIENT_ID=$WebAppName and expects redirect_uri to include /home.
+$redirectUris = @(
+  "http://localhost:$FrontendPort/home",
+  "http://127.0.0.1:$FrontendPort/home"
+) -join ","
+
+$script:sqlAppUpsert = @"
+-- oauth_client_details (OAuth client)
+INSERT INTO oauth_client_details(
+  client_id, resource_ids, client_secret, scope, authorized_grant_types,
+  web_server_redirect_uri, authorities, access_token_validity, refresh_token_validity,
+  additional_information, autoapprove
+)
+VALUES (
+  '$WebAppName', NULL, '$OauthClientSecret', 'all',
+  'password,authorization_code,refresh_token',
+  '$redirectUris', NULL, 36000, 36000, NULL, 'true'
+)
+ON DUPLICATE KEY UPDATE
+  client_secret = VALUES(client_secret),
+  web_server_redirect_uri = VALUES(web_server_redirect_uri),
+  scope = VALUES(scope),
+  authorized_grant_types = VALUES(authorized_grant_types),
+  access_token_validity = VALUES(access_token_validity),
+  refresh_token_validity = VALUES(refresh_token_validity),
+  autoapprove = VALUES(autoapprove);
+
+-- sys_oauth_client_meta (display name + ui port)
+INSERT INTO sys_oauth_client_meta(client_id, name, port)
+VALUES ('$WebAppName', '$AppDisplayName', $FrontendPort)
+ON DUPLICATE KEY UPDATE
+  name = VALUES(name),
+  port = VALUES(port);
+"@
+
+Register-OauthAppRecordIfPossible
 
