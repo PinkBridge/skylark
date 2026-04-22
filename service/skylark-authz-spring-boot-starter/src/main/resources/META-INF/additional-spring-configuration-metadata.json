@@ -1,0 +1,57 @@
+{
+  "properties": [
+    {
+      "name": "skylark.authz.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable/disable skylark authz starter."
+    },
+    {
+      "name": "skylark.authz.app-code",
+      "type": "java.lang.String",
+      "description": "Logical appCode used to fetch RBAC snapshot from permission."
+    },
+    {
+      "name": "skylark.authz.permission-base-url",
+      "type": "java.lang.String",
+      "description": "Base URL of permission service."
+    },
+    {
+      "name": "skylark.authz.token-path",
+      "type": "java.lang.String",
+      "description": "OAuth2 token endpoint path on permission service."
+    },
+    {
+      "name": "skylark.authz.snapshot-path",
+      "type": "java.lang.String",
+      "description": "RBAC snapshot endpoint path on permission service."
+    },
+    {
+      "name": "skylark.authz.client-id",
+      "type": "java.lang.String",
+      "description": "OAuth2 client_id used for client_credentials."
+    },
+    {
+      "name": "skylark.authz.client-secret",
+      "type": "java.lang.String",
+      "description": "OAuth2 client_secret used for client_credentials."
+    },
+    {
+      "name": "skylark.authz.sync-fixed-delay-ms",
+      "type": "java.lang.Long",
+      "defaultValue": 30000,
+      "description": "Fixed delay (ms) between RBAC snapshot sync runs."
+    },
+    {
+      "name": "skylark.authz.ignore-paths",
+      "type": "java.util.List<java.lang.String>",
+      "description": "Ant patterns to bypass authz enforcement."
+    },
+    {
+      "name": "skylark.authz.require-authentication",
+      "type": "java.lang.Boolean",
+      "defaultValue": true,
+      "description": "If true, unauthenticated requests are rejected with 401."
+    }
+  ]
+}
+

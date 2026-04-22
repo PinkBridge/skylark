@@ -78,6 +78,11 @@ public class MenuResponseDTO {
   private String moduleKey;
 
   /**
+   * 所属前端应用（permission-web、iot-web 等）
+   */
+  private String appCode;
+
+  /**
    * 创建时间
    */
   private LocalDateTime createTime;

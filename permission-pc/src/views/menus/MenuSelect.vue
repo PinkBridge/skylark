@@ -20,6 +20,11 @@ const props = defineProps({
   disabledIds: {
     type: Array,
     default: () => []
+  },
+  /** 与 sys_menu.app_code 一致；传入时只加载该应用下菜单树 */
+  appFilter: {
+    type: String,
+    default: ''
   }
 })
 
@@ -60,22 +65,22 @@ const formatTree = (tree) => {
     : []
 }
 
-onMounted(() => {
-  getMenuList().then(res => {
-    // Handle response format: could be array directly or wrapped in data property
+const loadTree = () => {
+  const params = props.appFilter ? { app: props.appFilter } : {}
+  getMenuList(params).then(res => {
     const menuTree = Array.isArray(res) ? res : (res.data || res.list || [])
     rawTree.value = menuTree
-    const formattedData = formatTree(rawTree.value)
-    data.value = formattedData
-    
-    // If parent component has passed a value, use it; otherwise select the first one
+    data.value = formatTree(rawTree.value)
     if (props.modelValue !== null && props.modelValue !== undefined && props.modelValue !== '') {
-      // Parent component has passed a value, use it
       innerValue.value = props.modelValue
     }
   }).catch(error => {
     console.error('Failed to load menu list:', error)
   })
+}
+
+onMounted(() => {
+  loadTree()
 })
 
 // Watch for external changes to modelValue
@@ -92,6 +97,13 @@ watch(
     data.value = formatTree(rawTree.value)
   },
   { deep: true }
+)
+
+watch(
+  () => props.appFilter,
+  () => {
+    loadTree()
+  }
 )
 </script>
 

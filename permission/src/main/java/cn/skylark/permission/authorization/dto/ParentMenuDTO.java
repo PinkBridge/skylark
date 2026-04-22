@@ -44,5 +44,10 @@ public class ParentMenuDTO {
    * 模块标识
    */
   private String moduleKey;
+
+  /**
+   * 所属前端应用
+   */
+  private String appCode;
 }
 

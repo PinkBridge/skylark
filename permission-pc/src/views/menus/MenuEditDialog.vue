@@ -12,8 +12,13 @@
           <el-option :label="t('ButtonLabel')" value="button" />
         </el-select>
       </el-form-item>
-      <el-form-item v-if="form.type == 'menu'" :label="t('ParentNameLabel')" prop="parentId">
-        <MenuSelect v-model="form.parentId" :disabled-ids="[form.id]" />
+      <el-form-item :label="t('AppCodeLabel')" prop="appCode">
+        <el-select v-model="form.appCode" filterable :placeholder="t('AppCodeLabel')" class="full-width">
+          <el-option v-for="id in clientIds" :key="id" :label="id" :value="id" />
+        </el-select>
+      </el-form-item>
+      <el-form-item v-if="form.type == 'menu' && form.appCode" :label="t('ParentNameLabel')" prop="parentId">
+        <MenuSelect v-model="form.parentId" :disabled-ids="[form.id]" :app-filter="form.appCode" />
       </el-form-item>
       <el-form-item v-if="form.type == 'menu'" :label="t('PathLabel')" prop="path">
         <el-input v-model="form.path" :placeholder="t('PathLabel')" />
@@ -61,7 +66,13 @@ import MenuSelect from '@/views/menus/MenuSelect.vue'
 
 const { t } = useI18n()
 
-const props = defineProps(['visible', 'row', 'onSubmit', 'onCancel'])
+const props = defineProps({
+  visible: Boolean,
+  row: Object,
+  clientIds: { type: Array, default: () => [] },
+  onSubmit: Function,
+  onCancel: Function
+})
 
 const formRef = ref(null)
 const form = ref({})
@@ -73,6 +84,9 @@ const rules = computed(() => {
     ],
     type: [
       { required: true, message: t('TypeRequired'), trigger: 'blur' }
+    ],
+    appCode: [
+      { required: true, message: t('AppCodeRequired'), trigger: 'change' }
     ]
   }
 })
@@ -103,6 +117,7 @@ const onSubmit = async () => {
       icon: form.value.type == 'menu' ? form.value.icon : '',
       permlabel: form.value.permlabel || '',
       sort: form.value.sort || 0,
+      appCode: form.value.appCode || '',
     }
     updateMenuById(form.value.id, menu).then(() => {
       props.onSubmit()
@@ -133,5 +148,9 @@ watch(
 )
 </script>
 
-<style scoped></style>
+<style scoped>
+.full-width {
+  width: 100%;
+}
+</style>
 

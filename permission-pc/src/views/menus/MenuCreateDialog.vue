@@ -5,8 +5,13 @@
       <el-form-item :label="t('NameLabel')" prop="name">
         <el-input v-model="form.name" :placeholder="t('NameLabel')" />
       </el-form-item>
-      <el-form-item :label="t('ParentNameLabel')" prop="parentId">
-        <MenuSelect v-model="form.parentId" :disabled-ids="[form.id]" />
+      <el-form-item :label="t('AppCodeLabel')" prop="appCode">
+        <el-select v-model="form.appCode" filterable :placeholder="t('AppCodeLabel')" class="full-width">
+          <el-option v-for="id in clientIds" :key="id" :label="id" :value="id" />
+        </el-select>
+      </el-form-item>
+      <el-form-item v-if="form.appCode" :label="t('ParentNameLabel')" prop="parentId">
+        <MenuSelect v-model="form.parentId" :disabled-ids="[form.id]" :app-filter="form.appCode" />
       </el-form-item>
       <el-form-item :label="t('TypeLabel')" prop="type">
         <el-select v-model="form.type" :placeholder="t('TypeLabel')">
@@ -41,7 +46,6 @@
       <el-form-item :label="t('ModuleKeyLabel')" prop="moduleKey">
         <el-input v-model="form.moduleKey" :placeholder="t('ModuleKeyLabel')" />
       </el-form-item>
-      
     </el-form>
     <template #footer>
       <div class="dialog-footer">
@@ -53,7 +57,7 @@
 </template>
 
 <script setup name="MenuCreateDialog">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { createMenu } from '@/views/menus/MenuApi'
 import { ElMessage } from 'element-plus'
@@ -61,7 +65,13 @@ import MenuSelect from '@/views/menus/MenuSelect.vue'
 
 const { t } = useI18n()
 
-const props = defineProps(['visible', 'onSubmit', 'onCancel'])
+const props = defineProps({
+  visible: Boolean,
+  clientIds: { type: Array, default: () => [] },
+  defaultAppCode: { type: String, default: '' },
+  onSubmit: Function,
+  onCancel: Function
+})
 
 const formRef = ref(null)
 const form = ref({
@@ -74,6 +84,7 @@ const form = ref({
   icon: '',
   type: 'menu',
   permlabel: '',
+  appCode: '',
 })
 
 const rules = computed(() => {
@@ -86,9 +97,22 @@ const rules = computed(() => {
     ],
     permlabel: [
       { required: true, message: t('PermLabelRequired'), trigger: 'blur' }
+    ],
+    appCode: [
+      { required: true, message: t('AppCodeRequired'), trigger: 'change' }
     ]
   }
 })
+
+watch(
+  () => props.visible,
+  (v) => {
+    if (v) {
+      const d = props.defaultAppCode || props.clientIds[0] || ''
+      form.value.appCode = d
+    }
+  }
+)
 
 const onCancel = () => {
   if (formRef.value) {
@@ -104,6 +128,7 @@ const onCancel = () => {
     icon: '',
     type: 'menu',
     permlabel: '',
+    appCode: props.defaultAppCode || props.clientIds[0] || '',
   }
   props.onCancel()
 }
@@ -123,6 +148,7 @@ const onSubmit = async () => {
       icon: form.value.icon || '',
       type: form.value.type || 'menu',
       permlabel: form.value.permlabel || '',
+      appCode: form.value.appCode || props.clientIds[0] || '',
     }
     createMenu(menu).then(() => {
       formRef.value.resetFields()
@@ -137,5 +163,9 @@ const onSubmit = async () => {
 }
 </script>
 
-<style scoped></style>
+<style scoped>
+.full-width {
+  width: 100%;
+}
+</style>
 

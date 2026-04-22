@@ -14,6 +14,7 @@
         <result column="type" property="type"/>
         <result column="permlabel" property="permlabel"/>
         <result column="module_key" property="moduleKey"/>
+        <result column="app_code" property="appCode"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
     </resultMap>
@@ -26,7 +27,7 @@
     </select>
 
     <sql id="Base_Column_List">
-        id, parent_id, name, name_i18n, path, icon, sort, hidden, type, permlabel, module_key, create_time, update_time
+        id, parent_id, name, name_i18n, path, icon, sort, hidden, type, permlabel, module_key, app_code, create_time, update_time
     </sql>
 
     <select id="selectAll" resultMap="MenuResult">
@@ -37,8 +38,8 @@
     </select>
 
     <insert id="insert" parameterType="cn.skylark.permission.authorization.entity.SysMenu">
-        INSERT INTO sys_menu(parent_id, name, name_i18n, path, icon, sort, hidden, type, permlabel, module_key)
-        VALUES (#{parentId}, #{name}, #{nameI18n}, #{path}, #{icon}, #{sort}, #{hidden}, #{type}, #{permlabel}, #{moduleKey})
+        INSERT INTO sys_menu(parent_id, name, name_i18n, path, icon, sort, hidden, type, permlabel, module_key, app_code)
+        VALUES (#{parentId}, #{name}, #{nameI18n}, #{path}, #{icon}, #{sort}, #{hidden}, #{type}, #{permlabel}, #{moduleKey}, #{appCode})
     </insert>
 
     <update id="update" parameterType="cn.skylark.permission.authorization.entity.SysMenu">
@@ -52,7 +53,8 @@
             hidden     = #{hidden},
             type       = #{type},
             permlabel  = #{permlabel},
-            module_key = #{moduleKey}
+            module_key = #{moduleKey},
+            app_code   = #{appCode}
         WHERE id = #{id}
     </update>
 
@@ -67,7 +69,8 @@
             hidden = #{menu.hidden},
             type = #{menu.type},
             permlabel = #{menu.permlabel},
-            module_key = #{menu.moduleKey}
+            module_key = #{menu.moduleKey},
+            app_code = #{menu.appCode}
         WHERE id = #{menuId}
     </update>
 
@@ -115,13 +118,16 @@
         VALUES (#{roleId}, #{menuId})
     </insert>
 
-    <select id="selectMenusByUsername" parameterType="string" resultMap="MenuResult">
+    <select id="selectMenusByUsername" resultMap="MenuResult">
         SELECT DISTINCT m.*
         FROM sys_menu m
                  INNER JOIN sys_user u ON u.username = #{username}
                  INNER JOIN sys_user_role ur ON ur.user_id = u.id
                  INNER JOIN sys_role_menu rm ON rm.role_id = ur.role_id
         WHERE rm.menu_id = m.id
+        <if test="appCode != null and appCode != ''">
+            AND m.app_code = #{appCode}
+        </if>
         ORDER BY m.parent_id ASC, m.sort ASC, m.id ASC
     </select>
 

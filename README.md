@@ -118,8 +118,67 @@ docker compose build permission-app
 - `gateway/`: Spring Cloud Gateway
 - `permission/`: permission service (OAuth2 + RBAC + multi-tenant + Flyway)
 - `permission-pc/`: admin UI (Vue3 + Element Plus), Compose service name is `permission-app`
+- `web/`: pnpm workspace for shared JS packages (`packages/*`) + links `permission-pc` (see `web/README.md`)
+- `service/`: Maven reactor for Skylark starters + `skylark-demo-service` template (see `service/README.md`)
+- `tools/new-service.ps1`: generate a new business service under `service/<name>/` from the demo template
+- `tools/new-frontend.ps1`: generate a new Vue CLI app under `web/apps/` from `skylark-demo-web`
+- `tools/new-fullstack.ps1`: run both of the above in one step (same defaults: web app name = `<ServiceName>-web`)
 
-### 8. FAQ
+### 8. New app scaffolding & maintenance (PowerShell)
+
+Run scripts from the repo root. They will also keep `docker-compose.yml` and `service/pom.xml` in sync (so you can deploy via Compose without manually editing files).
+
+#### Create a new service (backend)
+
+```powershell
+.\tools\new-service.ps1 -ServiceName order-service -ArtifactId skylark-order-service -Port 18081
+```
+
+- Output: `service/order-service/`
+- Also updates: `service/pom.xml` `<modules>` + `docker-compose.yml` (adds an `order-service:` block)
+
+#### Create a new web app (frontend)
+
+```powershell
+.\tools\new-frontend.ps1 -AppName order-web -Port 9531 -Title "Order Web"
+```
+
+- Output: `web/apps/order-web/`
+- Also updates: `docker-compose.yml` (adds an `order-web:` block)
+
+#### Create both service + web in one step
+
+```powershell
+.\tools\new-fullstack.ps1 -ServiceName order-service -WebAppName order-web -BackendPort 18081 -FrontendPort 9531 -Title "Order Web"
+```
+
+If you omit `-WebAppName`, it defaults to `<ServiceName>-web` (e.g. `order-service-web`).
+
+#### Remove a service (cleanup)
+
+```powershell
+.\tools\remove-service.ps1 -ServiceName order-service
+```
+
+Deletes `service/order-service/`, removes its `<module>` from `service/pom.xml`, and removes its service block from `docker-compose.yml`.
+
+#### Remove a web app (cleanup)
+
+```powershell
+.\tools\remove-web.ps1 -AppName order-web
+```
+
+Deletes `web/apps/order-web/` and removes its service block from `docker-compose.yml`.
+
+#### Remove both in one step
+
+```powershell
+.\tools\remove-fullstack.ps1 -ServiceName order-service -WebAppName order-web
+```
+
+Use `-KeepCompose` to keep `docker-compose.yml` unchanged.
+
+### 9. FAQ
 
 #### How do I connect to the database remotely?
 

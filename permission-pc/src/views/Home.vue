@@ -24,6 +24,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { exchangeCodeForToken, checkToken } from '@/api/oauth'
+import { resolvePostLoginRouteName } from '@skylark/login-redirect-client'
 import { saveTokens, saveUserInfo, clearTokens, 
   getUserInfo as getStoredTokenInfo, isAuthenticated, getAccessToken } from '../utils/auth'
 import MenuComponent from '@/components/Menu.vue'
@@ -75,7 +76,8 @@ export default {
         }
         saveUserInfo(mergedTokenInfo, remember)
         tokenInfo.value = mergedTokenInfo
-        router.replace({ name: 'Home' })
+        const targetName = resolvePostLoginRouteName(router, { preferred: ['Apps'], fallback: 'Home' })
+        router.replace({ name: targetName })
       } catch (error) {
         console.error('OAuth callback error:', error)
         ElMessage.error('Login failed: ' + (error.message || 'Unknown error'))

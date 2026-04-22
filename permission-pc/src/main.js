@@ -3,6 +3,7 @@ import App from '@/App.vue'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import en from 'element-plus/dist/locale/en.mjs'
+import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import router from '@/router'
 
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
@@ -22,7 +23,7 @@ app.directive('permission', permission)
 
 app.use(i18n)
 app.use(ElementPlus, {
-  locale: en
+  locale: i18n.global.locale.value === 'zh' ? zhCn : en
 })
 app.use(router)
 app.mount('#app')

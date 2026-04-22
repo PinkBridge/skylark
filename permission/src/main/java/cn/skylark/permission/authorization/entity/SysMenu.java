@@ -20,6 +20,10 @@ public class SysMenu {
     private String type;
     private String permlabel;
     private String moduleKey;
+    /**
+     * 所属前端应用，如 permission-web、iot-web
+     */
+    private String appCode;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

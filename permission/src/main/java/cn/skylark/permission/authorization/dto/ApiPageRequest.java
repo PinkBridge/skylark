@@ -39,5 +39,10 @@ public class ApiPageRequest extends PageRequest {
    * 创建时间（查询此时间之前的数据）
    */
   private LocalDateTime createTime;
+
+  /**
+   * 所属前端应用（OAuth client_id）
+   */
+  private String app;
 }
 

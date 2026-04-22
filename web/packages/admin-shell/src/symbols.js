@@ -1,0 +1,1 @@
+export const ADMIN_SHELL_CONFIG = Symbol('ADMIN_SHELL_CONFIG')

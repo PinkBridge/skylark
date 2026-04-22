@@ -37,8 +37,8 @@ public class ApiController {
   }
 
   @GetMapping
-  public Ret<List<ApiResponseDTO>> list() {
-    return Ret.data(apiService.listDTO());
+  public Ret<List<ApiResponseDTO>> list(@RequestParam(required = false) String app) {
+    return Ret.data(apiService.listDTO(app));
   }
 
   /**
@@ -46,16 +46,16 @@ public class ApiController {
    * 平台/超管上下文下返回全量列表。
    */
   @GetMapping("/grantable")
-  public Ret<List<SysApi>> grantableList() {
+  public Ret<List<SysApi>> grantableList(@RequestParam(required = false) String app) {
     Long tenantId = ceilingService.resolveTenantIdOrNull();
     if (tenantId == null) {
-      return Ret.data(apiService.list());
+      return Ret.data(apiService.list(app));
     }
     Long adminRoleId = ceilingService.tenantAdminRoleId(tenantId);
     if (adminRoleId == null) {
       return Ret.data(java.util.Collections.emptyList());
     }
-    return Ret.data(apiService.listByRole(adminRoleId));
+    return Ret.data(apiService.listByRole(adminRoleId, app));
   }
 
   /**
@@ -78,6 +78,7 @@ public class ApiController {
       @RequestParam(required = false) String path,
       @RequestParam(required = false) String permlabel,
       @RequestParam(required = false) String moduleKey,
+      @RequestParam(required = false) String app,
       @RequestParam(required = false) LocalDateTime createTime) {
     ApiPageRequest pageRequest = new ApiPageRequest();
     pageRequest.setPage(page);
@@ -86,6 +87,7 @@ public class ApiController {
     pageRequest.setPath(path);
     pageRequest.setPermlabel(permlabel);
     pageRequest.setModuleKey(moduleKey);
+    pageRequest.setApp(app);
     pageRequest.setCreateTime(createTime);
     return Ret.data(apiService.pageDTOWithCondition(pageRequest));
   }

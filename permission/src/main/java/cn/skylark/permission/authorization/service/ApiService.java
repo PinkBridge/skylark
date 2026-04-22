@@ -41,10 +41,18 @@ public class ApiService {
   }
 
   public List<SysApi> list() {
-    return apiMapper.selectAll();
+    return list(null);
+  }
+
+  public List<SysApi> list(String app) {
+    List<SysApi> apis = apiMapper.selectAll();
+    return filterApisByApp(apis, app);
   }
 
   public int create(SysApi api) {
+    if (api != null && !StringUtils.hasText(api.getAppCode())) {
+      api.setAppCode("permission-web");
+    }
     return apiMapper.insert(api);
   }
 
@@ -57,7 +65,12 @@ public class ApiService {
   }
 
   public List<SysApi> listByRole(Long roleId) {
-    return apiMapper.selectByRoleId(roleId);
+    return listByRole(roleId, null);
+  }
+
+  public List<SysApi> listByRole(Long roleId, String app) {
+    List<SysApi> apis = apiMapper.selectByRoleId(roleId);
+    return filterApisByApp(apis, app);
   }
 
   public void bindRoleApis(Long roleId, List<Long> apiIds) {
@@ -124,7 +137,12 @@ public class ApiService {
    * @return API列表
    */
   public List<ApiResponseDTO> listDTO() {
+    return listDTO(null);
+  }
+
+  public List<ApiResponseDTO> listDTO(String app) {
     List<SysApi> apis = apiMapper.selectAll();
+    apis = filterApisByApp(apis, app);
     return apis.stream().map(this::convertToDTO).collect(Collectors.toList());
   }
 
@@ -164,6 +182,7 @@ public class ApiService {
                            StringUtils.hasText(pageRequest.getPath()) ||
                            StringUtils.hasText(pageRequest.getPermlabel()) ||
                            StringUtils.hasText(pageRequest.getModuleKey()) ||
+                           StringUtils.hasText(pageRequest.getApp()) ||
                            pageRequest.getCreateTime() != null;
 
     List<SysApi> records;
@@ -176,6 +195,7 @@ public class ApiService {
           pageRequest.getPath(),
           pageRequest.getPermlabel(),
           pageRequest.getModuleKey(),
+          pageRequest.getApp(),
           pageRequest.getCreateTime(),
           pageRequest.getOffset(),
           pageRequest.getLimit()
@@ -185,6 +205,7 @@ public class ApiService {
           pageRequest.getPath(),
           pageRequest.getPermlabel(),
           pageRequest.getModuleKey(),
+          pageRequest.getApp(),
           pageRequest.getCreateTime()
       );
     } else {
@@ -205,6 +226,12 @@ public class ApiService {
    * @return 更新行数
    */
   public int updateApiInfo(Long apiId, UpdateApiDTO dto) {
+    if (dto != null && !StringUtils.hasText(dto.getAppCode())) {
+      SysApi existing = apiMapper.selectById(apiId);
+      if (existing != null && StringUtils.hasText(existing.getAppCode())) {
+        dto.setAppCode(existing.getAppCode());
+      }
+    }
     return apiMapper.updateApiInfo(apiId, dto);
   }
 
@@ -221,5 +248,15 @@ public class ApiService {
     ApiResponseDTO dto = new ApiResponseDTO();
     BeanUtils.copyProperties(api, dto);
     return dto;
+  }
+
+  private static List<SysApi> filterApisByApp(List<SysApi> apis, String app) {
+    if (!StringUtils.hasText(app) || apis == null || apis.isEmpty()) {
+      return apis;
+    }
+    String code = app.trim();
+    return apis.stream()
+        .filter(a -> a != null && code.equals(a.getAppCode()))
+        .collect(Collectors.toList());
   }
 }

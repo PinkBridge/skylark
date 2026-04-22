@@ -1,7 +1,20 @@
 <template>
   <el-dialog :model-value="visible" :title="t('SelectTitle')" align-center destroy-on-close :show-close="false"
     :modal="false" modal-penetrable width="80%">
-    <MenuSearchForm :search="handleSearch" :reset="handleReset" />
+    <div
+      v-loading="!oauthClientsReady"
+      :element-loading-text="t('AppsListLoading')"
+      class="menu-select-search-wrap"
+    >
+      <MenuSearchForm
+        v-if="oauthClientsReady"
+        :client-ids="oauthClientIds"
+        :app="selectedApp"
+        @update:app="onAppFilterChange"
+        :search="handleSearch"
+        :reset="handleReset"
+      />
+    </div>
     <el-table :data="tableData" style="width: 100%" stripe border show-overflow-tooltip selection-mode="multiple"
       ref="menuTableRef" row-key="id" @selection-change="handleSelectionChange" @select="handleSelect"
       :tree-props="{ checkStrictly: true }">
@@ -45,9 +58,10 @@
 </template>
 
 <script setup name="MenuSelectTableDialog">
-import { ref, watch, onMounted, nextTick } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getGrantableMenuTree } from '@/views/menus/MenuApi'
+import { getAppList } from '@/views/apps/AppApi'
 import MenuSearchForm from '@/views/menus/MenuSearchForm.vue'
 import { getRoleById, toggleRoleMenu } from '@/views/roles/RoleApi'
 import { ElMessage } from 'element-plus'
@@ -61,6 +75,17 @@ const tableData = ref([])
 const multipleSelection = ref([])
 const menuTableRef = ref(null)
 const searchParams = ref({})
+const oauthClientIds = ref([])
+/** 应用列表已拉取后再挂载筛选表单，避免首次打开时 el-select 在空 options 下不刷新 */
+const oauthClientsReady = ref(false)
+const selectedApp = ref('')
+
+const onAppFilterChange = (v) => {
+  selectedApp.value = v || ''
+}
+
+const normalizeMenuTreeResponse = (response) =>
+  Array.isArray(response) ? response : (response.data || response.list || [])
 /** 打开弹窗时服务端已绑定的菜单 ID，用于确认时与当前勾选做对称差后一次性 toggle */
 const baselineMenuIds = ref([])
 const confirmLoading = ref(false)
@@ -79,15 +104,29 @@ const expandFirstLevel = () => {
   })
 }
 
-// init data
-const initData = () => {
-  tableData.value = []
-  searchParams.value = {}
+async function loadOAuthClients() {
+  try {
+    const list = await getAppList()
+    const rows = Array.isArray(list) ? list : []
+    oauthClientIds.value = rows.map((c) => c.clientId).filter(Boolean).sort()
+    if (!selectedApp.value || !oauthClientIds.value.includes(selectedApp.value)) {
+      selectedApp.value = oauthClientIds.value[0] || ''
+    }
+  } catch (e) {
+    console.error('Failed to load OAuth clients:', e)
+  } finally {
+    oauthClientsReady.value = true
+  }
+}
 
-  getGrantableMenuTree().then(response => {
-    // Handle response format: could be array directly or wrapped in data property
-    const menuTree = Array.isArray(response) ? response : (response.data || response.list || [])
-    tableData.value = menuTree
+const grantableQuery = () => {
+  const app = searchParams.value.app ?? selectedApp.value ?? oauthClientIds.value[0] ?? ''
+  return app ? { app } : {}
+}
+
+const fetchGrantableMenusAndRole = () => {
+  getGrantableMenuTree(grantableQuery()).then(response => {
+    tableData.value = normalizeMenuTreeResponse(response)
     expandFirstLevel()
 
     getRoleById(props.row.id).then(response => {
@@ -102,29 +141,32 @@ const initData = () => {
   })
 }
 
+// init data
+const initData = async () => {
+  oauthClientsReady.value = false
+  tableData.value = []
+  await loadOAuthClients()
+  const app = selectedApp.value || oauthClientIds.value[0] || ''
+  selectedApp.value = app
+  searchParams.value = { app }
+
+  fetchGrantableMenusAndRole()
+}
+
 // reset data
 const handleReset = (params) => {
   searchParams.value = params || {}
-  initData()
+  selectedApp.value = params?.app || ''
+  fetchGrantableMenusAndRole()
 }
 
 // filter data
 const handleSearch = (params) => {
   searchParams.value = params
-  getGrantableMenuTree().then(response => {
-    const menuTree = Array.isArray(response) ? response : (response.data || response.list || [])
-    tableData.value = menuTree
-    expandFirstLevel()
-    getRoleById(props.row.id).then(response => {
-      const menuIds = response.menuIds || []
-      baselineMenuIds.value = [...menuIds]
-      nextTick(() => {
-        setDefaultSelection(menuIds)
-      })
-    })
-  }).catch(error => {
-    console.error('Failed to search menu list:', error)
-  })
+  if (params.app !== undefined && params.app !== null) {
+    selectedApp.value = params.app
+  }
+  fetchGrantableMenusAndRole()
 }
 
 // cancel
@@ -192,6 +234,23 @@ function idsToToggle(baseline, selectedSet) {
   return out
 }
 
+/** 当前表格树内的全部菜单 id（当前应用/筛选范围），用于限定差分不影响其它应用的绑定 */
+function collectMenuIdsFromTree(nodes) {
+  if (!Array.isArray(nodes) || nodes.length === 0) {
+    return []
+  }
+  const out = []
+  for (const n of nodes) {
+    if (n?.id != null) {
+      out.push(Number(n.id))
+    }
+    if (Array.isArray(n.children) && n.children.length > 0) {
+      out.push(...collectMenuIdsFromTree(n.children))
+    }
+  }
+  return out
+}
+
 const handleConfirm = () => {
   const table = menuTableRef.value
   if (!table || !props.row?.id) {
@@ -199,16 +258,19 @@ const handleConfirm = () => {
   }
   const rows = table.getSelectionRows()
   const selectedSet = new Set(rows.map((r) => Number(r.id)))
-  const toToggle = idsToToggle(baselineMenuIds.value, selectedSet)
+  const visibleIds = new Set(collectMenuIdsFromTree(tableData.value))
+  const baselineScoped = baselineMenuIds.value.filter((id) => visibleIds.has(Number(id)))
+  const toToggle = idsToToggle(baselineScoped, selectedSet)
   if (toToggle.length === 0) {
     props.onConfirm()
     return
   }
   confirmLoading.value = true
   toggleRoleMenu(props.row.id, toToggle)
-    .then(() => {
+    .then(() => getRoleById(props.row.id))
+    .then((roleDto) => {
       ElMessage.success(t('UpdateSuccess'))
-      baselineMenuIds.value = [...selectedSet]
+      baselineMenuIds.value = [...(roleDto.menuIds || [])]
       props.onConfirm()
     })
     .catch((error) => {
@@ -256,14 +318,9 @@ const setDefaultSelection = (menuIds) => {
   })
 }
 
-onMounted(() => {
-  initData()
-})
-
 // Watch for dialog visibility changes
 watch(() => props.visible, (newVal) => {
   if (newVal && props.row?.id) {
-    // Dialog opened, reload data
     initData()
   }
 })
@@ -280,6 +337,11 @@ watch(() => props.visible, (newVal) => {
   margin-bottom: 16px;
   display: flex;
   justify-content: flex-start;
+}
+
+.menu-select-search-wrap {
+  min-height: 48px;
+  margin-bottom: 12px;
 }
 </style>
 

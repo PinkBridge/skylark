@@ -21,5 +21,12 @@
         WHERE client_id = #{clientId}
         LIMIT 1
     </select>
+
+    <select id="selectAll" resultMap="BaseResult">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_oauth_client_meta
+        ORDER BY client_id ASC
+    </select>
 </mapper>
 

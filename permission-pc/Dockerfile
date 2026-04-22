@@ -1,10 +1,12 @@
-# Build static assets (VUE_APP_* from .env.production at build time)
+# Build static assets (VUE_APP_* from build args)
 FROM node:20-alpine AS builder
 WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@9 --activate
 
 COPY pnpm-lock.yaml package.json ./
+COPY vendor/i18n-client ./vendor/i18n-client
+COPY vendor/login-redirect-client ./vendor/login-redirect-client
 RUN pnpm install --frozen-lockfile
 
 COPY babel.config.js vue.config.js ./

@@ -8,6 +8,7 @@
         <result column="path" property="path"/>
         <result column="permlabel" property="permlabel"/>
         <result column="module_key" property="moduleKey"/>
+        <result column="app_code" property="appCode"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
     </resultMap>
@@ -47,6 +48,9 @@
             <if test="moduleKey != null and moduleKey != ''">
                 AND module_key LIKE CONCAT('%', #{moduleKey}, '%')
             </if>
+            <if test="appCode != null and appCode != ''">
+                AND app_code = #{appCode}
+            </if>
             <if test="createTime != null">
                 AND create_time &lt;= #{createTime}
             </if>
@@ -76,6 +80,9 @@
             <if test="moduleKey != null and moduleKey != ''">
                 AND module_key LIKE CONCAT('%', #{moduleKey}, '%')
             </if>
+            <if test="appCode != null and appCode != ''">
+                AND app_code = #{appCode}
+            </if>
             <if test="createTime != null">
                 AND create_time &lt;= #{createTime}
             </if>
@@ -83,8 +90,8 @@
     </select>
 
     <insert id="insert" parameterType="cn.skylark.permission.authorization.entity.SysApi">
-        INSERT INTO sys_api(method, path, permlabel, module_key)
-        VALUES (#{method}, #{path}, #{permlabel}, #{moduleKey})
+        INSERT INTO sys_api(method, path, permlabel, module_key, app_code)
+        VALUES (#{method}, #{path}, #{permlabel}, #{moduleKey}, #{appCode})
     </insert>
 
     <update id="update" parameterType="cn.skylark.permission.authorization.entity.SysApi">
@@ -92,7 +99,8 @@
         SET method     = #{method},
             path       = #{path},
             permlabel  = #{permlabel},
-            module_key = #{moduleKey}
+            module_key = #{moduleKey},
+            app_code   = #{appCode}
         WHERE id = #{id}
     </update>
 
@@ -101,7 +109,8 @@
         SET method     = #{api.method},
             path       = #{api.path},
             permlabel  = #{api.permlabel},
-            module_key = #{api.moduleKey}
+            module_key = #{api.moduleKey},
+            app_code   = #{api.appCode}
         WHERE id = #{apiId}
     </update>
 

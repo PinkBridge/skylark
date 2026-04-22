@@ -138,6 +138,11 @@ public class TenantFilter extends OncePerRequestFilter {
     if (path.startsWith("/oauth/")) {
       return true;
     }
+    // Spring Security 表单登录：此处不应绑定域名解析出的租户，否则 sys_user 查询会被 TenantInterceptor
+    // 追加 tenant_id，与用户库里的 tenant_id 不一致时会「用户不存在」。（用户名全局唯一 uk_username）
+    if (path.equals("/login")) {
+      return true;
+    }
     // 排除租户查询接口（根据域名查询租户）
     if (path.startsWith("/api/permission/tenants/domain/")) {
       return true;

@@ -83,6 +83,7 @@ public interface ApiMapper {
                                          @Param("path") String path,
                                          @Param("permlabel") String permlabel,
                                          @Param("moduleKey") String moduleKey,
+                                         @Param("appCode") String appCode,
                                          @Param("createTime") java.time.LocalDateTime createTime,
                                          @Param("offset") Integer offset,
                                          @Param("limit") Integer limit);
@@ -108,6 +109,7 @@ public interface ApiMapper {
                            @Param("path") String path,
                            @Param("permlabel") String permlabel,
                            @Param("moduleKey") String moduleKey,
+                           @Param("appCode") String appCode,
                            @Param("createTime") java.time.LocalDateTime createTime);
 
   /**

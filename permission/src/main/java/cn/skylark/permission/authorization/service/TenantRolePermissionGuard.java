@@ -3,6 +3,9 @@ package cn.skylark.permission.authorization.service;
 import cn.skylark.permission.authorization.entity.SysDataDomain;
 import cn.skylark.permission.authorization.entity.SysRole;
 import cn.skylark.permission.authorization.mapper.RoleMapper;
+import cn.skylark.permission.authorization.support.PlatformRoleConstants;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -29,6 +32,9 @@ public class TenantRolePermissionGuard {
     Long tenantId = ceilingService.resolveTenantIdOrNull();
     if (tenantId == null) {
       return; // 平台/超管上下文不限制
+    }
+    if (currentPrincipalIsSuperAdmin()) {
+      return;
     }
     if (roleId == null) {
       throw new IllegalArgumentException("role.id.required");
@@ -123,6 +129,15 @@ public class TenantRolePermissionGuard {
         throw new IllegalArgumentException("role.perms.exceed.tenant.admin");
       }
     }
+  }
+
+  private static boolean currentPrincipalIsSuperAdmin() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null) {
+      return false;
+    }
+    return auth.getAuthorities().stream()
+        .anyMatch(a -> PlatformRoleConstants.SUPER_ADMIN_ROLE_NAME.equals(a.getAuthority()));
   }
 }
 

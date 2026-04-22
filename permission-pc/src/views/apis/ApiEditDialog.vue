@@ -5,6 +5,11 @@
       <el-form-item :label="t('IDLabel')" prop="id">
         <el-input v-model="form.id" :disabled="true" />
       </el-form-item>
+      <el-form-item :label="t('AppCodeLabel')" prop="appCode">
+        <el-select v-model="form.appCode" filterable clearable :placeholder="t('AppCodePlaceholder')">
+          <el-option v-for="app in appOptions" :key="app.clientId" :label="app.clientId" :value="app.clientId" />
+        </el-select>
+      </el-form-item>
       <el-form-item :label="t('MethodLabel')" prop="method">
         <el-select v-model="form.method">
           <el-option v-for="item in methodOptions" :key="item.value" :label="item.label" :value="item.value" />
@@ -34,6 +39,7 @@ import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getApiById, updateApiById } from '@/views/apis/ApiApi'
 import { ElMessage } from 'element-plus'
+import { getAppList } from '@/views/apps/AppApi'
 
 const { t } = useI18n()
 
@@ -41,6 +47,7 @@ const props = defineProps(['visible', 'row', 'onSubmit', 'onCancel'])
 
 const formRef = ref(null)
 const form = ref({})
+const appOptions = ref([])
 const methodOptions = ref([
   { label: 'GET', value: 'GET' },
   { label: 'POST', value: 'POST' },
@@ -52,6 +59,7 @@ const methodOptions = ref([
 // Validation rules - use computed to react to language changes
 const rules = computed(() => {
   return {
+    appCode: [{ required: true, message: t('AppCodeRequired'), trigger: 'change' }],
     method: [
       { required: true, message: t('MethodRequired'), trigger: 'change' }
     ],
@@ -61,7 +69,7 @@ const rules = computed(() => {
     permlabel: [
       { required: true, message: t('PermLabelRequired'), trigger: 'blur' }
     ],
-    module_key: [
+    moduleKey: [
       { required: true, message: t('ModuleKeyRequired'), trigger: 'blur' }
     ]
   }
@@ -87,6 +95,7 @@ const onSubmit = async () => {
     
     // If validation passes, update API
     const api = {
+      appCode: form.value.appCode,
       method: form.value.method,
       path: form.value.path,
       permlabel: form.value.permlabel,
@@ -121,6 +130,15 @@ watch(
   },
   { immediate: true }
 )
+
+getAppList()
+  .then((response) => {
+    const rows = Array.isArray(response) ? response : (response.records || response.data || [])
+    appOptions.value = rows || []
+  })
+  .catch(() => {
+    appOptions.value = []
+  })
 </script>
 <style scoped></style>
 

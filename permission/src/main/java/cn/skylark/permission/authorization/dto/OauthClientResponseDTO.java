@@ -18,6 +18,16 @@ public class OauthClientResponseDTO {
   private String clientId;
 
   /**
+   * 显示名称（来自 sys_oauth_client_meta.name）
+   */
+  private String name;
+
+  /**
+   * UI 端口（来自 sys_oauth_client_meta.port）
+   */
+  private Integer port;
+
+  /**
    * 资源ID列表
    */
   private String resourceIds;

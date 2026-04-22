@@ -1,5 +1,20 @@
 <template>
   <el-form :inline="true" :model="formInline" class="demo-form-inline">
+    <el-form-item :label="t('AppCodeLabel')">
+      <el-select
+        v-model="formInline.app"
+        :placeholder="t('AppCodePlaceholder')"
+        clearable
+        filterable
+      >
+        <el-option
+          v-for="app in appOptions"
+          :key="app.clientId"
+          :label="app.clientId"
+          :value="app.clientId"
+        />
+      </el-select>
+    </el-form-item>
     <el-form-item :label="t('PathLabel')">
       <el-input v-model="formInline.path" :placeholder="t('PathLabel')" clearable />
     </el-form-item>
@@ -17,15 +32,19 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { Search, RefreshRight } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
+import { getAppList } from '@/views/apps/AppApi'
 
 const props = defineProps(['search', 'reset'])
 
 const { t } = useI18n()
 
+const appOptions = ref([])
+
 const formInline = reactive({
+  app: '',
   path: '',
   permlabel: '',
   moduleKey: ''
@@ -36,11 +55,23 @@ const onSubmit = () => {
 }
 
 const onReset = () => {
+  formInline.app = ''
   formInline.path = ''
   formInline.permlabel = ''
   formInline.moduleKey = ''
   props.reset(formInline)
 }
+
+onMounted(() => {
+  getAppList()
+    .then((response) => {
+      const rows = Array.isArray(response) ? response : (response.records || response.data || [])
+      appOptions.value = rows || []
+    })
+    .catch(() => {
+      appOptions.value = []
+    })
+})
 </script>
 
 <style scoped>

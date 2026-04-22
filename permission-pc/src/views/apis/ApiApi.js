@@ -14,7 +14,14 @@ export function getApiPage(currentPage, pageSize, params) {
  * Tenant-side grantable api list (ceiling-limited)
  */
 export function getGrantableApis() {
-  return http.get(`${API_PREFIX}/grantable`)
+  return http.get(`${API_PREFIX}/grantable`, {})
+}
+
+/**
+ * Tenant-side grantable api list (ceiling-limited), optional app filter
+ */
+export function getGrantableApisByApp(app) {
+  return http.get(`${API_PREFIX}/grantable`, app ? { app } : {})
 }
 
 /**

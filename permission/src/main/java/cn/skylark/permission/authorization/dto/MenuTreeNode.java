@@ -70,6 +70,11 @@ public class MenuTreeNode {
   private String moduleKey;
 
   /**
+   * 所属前端应用
+   */
+  private String appCode;
+
+  /**
    * 创建时间
    */
   private LocalDateTime createTime;

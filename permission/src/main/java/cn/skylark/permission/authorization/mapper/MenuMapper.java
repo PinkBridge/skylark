@@ -51,7 +51,11 @@ public interface MenuMapper {
    */
   int insertRoleMenuBinding(@Param("roleId") Long roleId, @Param("menuId") Long menuId);
 
-  List<SysMenu> selectMenusByUsername(@Param("username") String username);
+  /**
+   * @param appCode 非空时只返回该应用下的菜单
+   */
+  List<SysMenu> selectMenusByUsername(@Param("username") String username,
+                                      @Param("appCode") String appCode);
 
   /**
    * 更新菜单信息

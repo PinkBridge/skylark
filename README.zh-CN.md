@@ -118,8 +118,67 @@ docker compose build permission-app
 - `gateway/`：Spring Cloud Gateway
 - `permission/`：权限服务（OAuth2 + RBAC + 多租户 + Flyway）
 - `permission-pc/`：权限管理前端（Vue3 + Element Plus），Docker 服务名为 `permission-app`
+- `web/`：pnpm workspace，管理共享前端包（`packages/*`）并链接 `permission-pc`（见 `web/README.md`）
+- `service/`：Maven 聚合工程，包含 Skylark 的 Spring Boot starter 与 `skylark-demo-service` 模板（见 `service/README.md`）
+- `tools/new-service.ps1`：从 `service/skylark-demo-service` 在 `service/<name>/` 下生成新业务服务
+- `tools/new-frontend.ps1`：从 `web/apps/skylark-demo-web` 模板生成新业务前端（`web/apps/<name>`）
+- `tools/new-fullstack.ps1`：一次生成前后端（默认前端目录名为 `<ServiceName>-web`）
 
-### 8. 常见问题（FAQ）
+### 8. 新应用脚手架与维护（PowerShell）
+
+在仓库根目录执行脚本。脚本会同步维护 `docker-compose.yml` 和 `service/pom.xml`（因此无需手工改文件，也能直接用 Compose 编排部署）。
+
+#### 新建业务服务（后端）
+
+```powershell
+.\tools\new-service.ps1 -ServiceName order-service -ArtifactId skylark-order-service -Port 18081
+```
+
+- 生成目录：`service/order-service/`
+- 同步更新：`service/pom.xml` 的 `<modules>` + `docker-compose.yml`（新增 `order-service:` 段落）
+
+#### 新建业务前端（web）
+
+```powershell
+.\tools\new-frontend.ps1 -AppName order-web -Port 9531 -Title "Order Web"
+```
+
+- 生成目录：`web/apps/order-web/`
+- 同步更新：`docker-compose.yml`（新增 `order-web:` 段落）
+
+#### 一次生成前后端
+
+```powershell
+.\tools\new-fullstack.ps1 -ServiceName order-service -WebAppName order-web -BackendPort 18081 -FrontendPort 9531 -Title "Order Web"
+```
+
+不传 `-WebAppName` 时，默认前端目录名为 `<ServiceName>-web`（例如 `order-service-web`）。
+
+#### 移除后端服务（清理）
+
+```powershell
+.\tools\remove-service.ps1 -ServiceName order-service
+```
+
+会删除 `service/order-service/`，并从 `service/pom.xml` 移除 `<module>`，同时从 `docker-compose.yml` 删除对应 service 段落。
+
+#### 移除前端应用（清理）
+
+```powershell
+.\tools\remove-web.ps1 -AppName order-web
+```
+
+会删除 `web/apps/order-web/`，并从 `docker-compose.yml` 删除对应 service 段落。
+
+#### 一次移除前后端
+
+```powershell
+.\tools\remove-fullstack.ps1 -ServiceName order-service -WebAppName order-web
+```
+
+如需保留 `docker-compose.yml` 不变，可使用 `-KeepCompose`。
+
+### 9. 常见问题（FAQ）
 
 #### 数据库我怎么远程连接？
 

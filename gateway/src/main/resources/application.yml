@@ -22,21 +22,32 @@ spring:
       routes:
         - id: permission-api-service
           uri: ${services.permission.uri:http://permission}
+          order: -10
           predicates:
             - Path=/api/permission/**
           filters:
             - PreserveHostHeader
         - id: permission-oauth-service
           uri: ${services.permission.uri:http://permission}
+          order: -10
           predicates:
             - Path=/oauth/**
           filters:
             - PreserveHostHeader
+            # /oauth/** -> permission's legacy OAuth2 endpoints (/oauth/*)
             - RewritePath=/oauth/(?<segment>.*), /oauth/${segment}
         - id: permission-login-service
           uri: ${services.permission.uri:http://permission}
+          order: -10
           predicates:
             - Path=/login,/login/**
+          filters:
+            - PreserveHostHeader
+        - id: api-dynamic-service
+          uri: http://localhost
+          order: 100
+          predicates:
+            - Path=/api/**
           filters:
             - PreserveHostHeader
 

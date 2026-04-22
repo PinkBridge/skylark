@@ -29,5 +29,10 @@ public class UpdateApiDTO {
    * 模块键
    */
   private String moduleKey;
+
+  /**
+   * 所属前端应用（permission-web、iot-web 等）
+   */
+  private String appCode;
 }
 

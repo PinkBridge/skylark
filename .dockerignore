@@ -1,0 +1,8 @@
+# Context root is often the repo (see docker-compose iot-web / demo-web). Nested
+# app .dockerignore files are not applied — only this file is. Excluding host
+# node_modules avoids COPY overwriting pnpm symlinks (especially on Windows)
+# and keeps build context small.
+**/node_modules
+
+# Avoid copying prior local builds into the image.
+web/apps/*/dist

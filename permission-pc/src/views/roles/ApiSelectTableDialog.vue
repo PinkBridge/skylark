@@ -7,6 +7,7 @@
       @selection-change="handleSelectionChange" @select-all="handleSelectAll">
       <el-table-column type="selection" width="55" />
       <el-table-column fixed prop="id" :label="t('IDLabel')" width="80"/>
+      <el-table-column prop="appCode" :label="t('AppCodeLabel')" width="180" />
       <el-table-column prop="method" :label="t('MethodLabel')" width="120">
         <template #default="{ row }">
           <el-tag
@@ -39,11 +40,11 @@
 </template>
 
 <script setup name="ApiSelectTableDialog">
-import { ref, watch, onMounted, nextTick } from 'vue'    
+import { ref, watch, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getGrantableApis } from '@/views/apis/ApiApi'
+import { getGrantableApisByApp } from '@/views/apis/ApiApi'
 import ApiSearchForm from '@/views/apis/ApiSearchForm.vue'
-import { getRoleById, bindRoleApis } from '@/views/roles/RoleApi'
+import { getRoleById, toggleRoleApi } from '@/views/roles/RoleApi'
 import { ElMessage } from 'element-plus'
 
 const { t } = useI18n()
@@ -55,15 +56,17 @@ const tableData = ref([])
 const multipleSelection = ref([])
 const apiTableRef = ref(null)
 const confirmLoading = ref(false)
+const baselineApiIds = ref([])
 
 // init data
 const initData = () => {
   tableData.value = []
 
-  getGrantableApis().then(response => {
+  getGrantableApisByApp().then(response => {
     tableData.value = Array.isArray(response) ? response : (response.records || response.data || [])
     getRoleById(props.row.id).then(response => {
       const apiIds = response.apiIds
+      baselineApiIds.value = [...(apiIds || [])]
       nextTick(() => {
         setDefaultSelection(apiIds)
       })
@@ -78,7 +81,8 @@ const handleReset = () => {
 
 // filter data
 const handleSearch = (params) => {
-  getGrantableApis().then(response => {
+  const app = params && params.app ? String(params.app) : ''
+  getGrantableApisByApp(app).then(response => {
     const rows = Array.isArray(response) ? response : (response.records || response.data || [])
     const q = params || {}
     tableData.value = rows.filter(r => {
@@ -90,6 +94,7 @@ const handleSearch = (params) => {
     })
     getRoleById(props.row.id).then(response => {
       const apiIds = response.apiIds
+      baselineApiIds.value = [...(apiIds || [])]
       nextTick(() => {
         setDefaultSelection(apiIds)
       })
@@ -128,11 +133,27 @@ const handleConfirm = () => {
     return
   }
   const rows = table.getSelectionRows()
-  const apiIds = rows.map((r) => r.id)
+  const selectedSet = new Set(rows.map((r) => Number(r.id)))
+  const visibleIds = new Set((tableData.value || []).map((r) => Number(r.id)))
+  const baselineScoped = (baselineApiIds.value || []).filter((id) => visibleIds.has(Number(id)))
+  const baseSet = new Set(baselineScoped.map((id) => Number(id)))
+  const toToggle = []
+  for (const id of baseSet) {
+    if (!selectedSet.has(id)) toToggle.push(id)
+  }
+  for (const id of selectedSet) {
+    if (!baseSet.has(id)) toToggle.push(id)
+  }
+  if (toToggle.length === 0) {
+    props.onConfirm()
+    return
+  }
   confirmLoading.value = true
-  bindRoleApis(props.row.id, apiIds)
-    .then(() => {
+  Promise.all(toToggle.map((id) => toggleRoleApi(props.row.id, id)))
+    .then(() => getRoleById(props.row.id))
+    .then((roleDto) => {
       ElMessage.success(t('UpdateSuccess'))
+      baselineApiIds.value = [...(roleDto.apiIds || [])]
       props.onConfirm()
     })
     .catch((error) => {

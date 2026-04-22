@@ -1,0 +1,12 @@
+{
+  "name": "skylark-web-workspace",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "build:permission-app": "pnpm --filter permission-app build",
+    "serve:permission-app": "pnpm --filter permission-app serve",
+    "lint:permission-app": "pnpm --filter permission-app lint",
+    "build:demo-web": "pnpm --filter skylark-demo-web build",
+    "serve:demo-web": "pnpm --filter skylark-demo-web serve"
+  }
+}

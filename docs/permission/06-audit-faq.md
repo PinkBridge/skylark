@@ -1,4 +1,4 @@
-## 05. Logs / whitelist / FAQ
+## 06. Logs / whitelist / FAQ
 
 English | [简体中文](05-audit-faq.zh-CN.md)
 

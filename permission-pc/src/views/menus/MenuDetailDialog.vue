@@ -18,6 +18,7 @@
       <el-descriptions-item :label="t('SortLabel')">{{ menuInfo.sort }}</el-descriptions-item>
       <el-descriptions-item :label="t('PermLabel')">{{ menuInfo.permlabel }}</el-descriptions-item>
       <el-descriptions-item :label="t('ModuleKeyLabel')">{{ menuInfo.moduleKey }}</el-descriptions-item>
+      <el-descriptions-item :label="t('AppCodeLabel')">{{ menuInfo.appCode || '-' }}</el-descriptions-item>
       <el-descriptions-item :label="t('CreatedAtLabel')">{{ menuInfo.createTime }}</el-descriptions-item>
       <el-descriptions-item :label="t('UpdatedAtLabel')">{{ menuInfo.updateTime }}</el-descriptions-item>
     </el-descriptions>

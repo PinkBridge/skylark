@@ -1,4 +1,5 @@
 import http from '@/api/http'
+import { MENU_APP_CODE } from '@/views/menus/MenuApi'
 
 const APP_NAME = process.env.APP_NAME || 'permission'
 const USER_PREFIX = "/" + APP_NAME + "/users"
@@ -30,5 +31,5 @@ const MENU_PREFIX = "/" + APP_NAME + "/menus"
  * Get current user's menu tree
  */
 export function getMyMenuTree() {
-  return http.get(`${MENU_PREFIX}/me/tree`)
+  return http.get(`${MENU_PREFIX}/me/tree`, { app: MENU_APP_CODE })
 }

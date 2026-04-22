@@ -3,6 +3,7 @@
     destroy-on-close :modal="false" modal-penetrable :show-close="false">
     <el-descriptions border>
       <el-descriptions-item :label="t('IDLabel')">{{ apiInfo.id }}</el-descriptions-item>
+      <el-descriptions-item :label="t('AppCodeLabel')">{{ apiInfo.appCode }}</el-descriptions-item>
       <el-descriptions-item :label="t('MethodLabel')">{{ apiInfo.method }}</el-descriptions-item>
       <el-descriptions-item :label="t('PathLabel')">{{ apiInfo.path }}</el-descriptions-item>
       <el-descriptions-item :label="t('PermLabelLabel')">{{ apiInfo.permlabel }}</el-descriptions-item>

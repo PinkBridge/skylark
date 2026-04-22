@@ -6,6 +6,7 @@ import cn.skylark.permission.authorization.dto.UpdateMenuDTO;
 import cn.skylark.permission.authorization.entity.SysMenu;
 import cn.skylark.permission.authorization.service.MenuService;
 import cn.skylark.permission.authorization.service.TenantPermissionCeilingService;
+import cn.skylark.permission.authorization.support.PlatformRoleConstants;
 import cn.skylark.permission.utils.Ret;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -28,8 +29,9 @@ public class MenuController {
   private TenantPermissionCeilingService ceilingService;
 
   @GetMapping
-  public Ret<List<MenuResponseDTO>> list(Locale locale) {
-    return Ret.data(menuService.listDTO(locale));
+  public Ret<List<MenuResponseDTO>> list(Locale locale,
+                                         @RequestParam(required = false) String app) {
+    return Ret.data(menuService.listDTO(locale, app));
   }
 
   @GetMapping("/{id}")
@@ -75,8 +77,9 @@ public class MenuController {
       @RequestParam(required = false) String permlabel,
       @RequestParam(required = false) String moduleKey,
       @RequestParam(required = false) String path,
+      @RequestParam(required = false) String app,
       Locale locale) {
-    return Ret.data(menuService.menuTree(name, permlabel, moduleKey, path, locale));
+    return Ret.data(menuService.menuTree(name, permlabel, moduleKey, path, locale, app));
   }
 
   /**
@@ -95,21 +98,26 @@ public class MenuController {
                                              @RequestParam(required = false) String permlabel,
                                              @RequestParam(required = false) String moduleKey,
                                              @RequestParam(required = false) String path,
+                                             @RequestParam(required = false) String app,
                                              Locale locale) {
     String username = authentication.getName();
-    return Ret.data(menuService.userMenuTree(username, name, permlabel, moduleKey, path, locale));
+    return Ret.data(menuService.userMenuTree(username, name, permlabel, moduleKey, path, locale, app));
   }
 
   /**
    * 租户侧“可授权范围”菜单树：返回“租户管理员上限”内的菜单（含必要父节点）。
-   * 平台/超管上下文下返回全量树。
+   * 平台上下文（无租户）或当前用户为 {@link PlatformRoleConstants#SUPER_ADMIN_ROLE_NAME} 时返回库内全量树（仍可按 app 筛选）。
    */
   @GetMapping("/grantable/tree")
-  public Ret<List<MenuTreeNode>> grantableTree(Locale locale) {
+  public Ret<List<MenuTreeNode>> grantableTree(Authentication authentication,
+                                               Locale locale,
+                                               @RequestParam(required = false) String app) {
     Long tenantId = ceilingService.resolveTenantIdOrNull();
-    if (tenantId == null) {
-      return Ret.data(menuService.menuTree(null, null, null, null, locale));
+    boolean superAdmin = authentication != null && authentication.getAuthorities().stream()
+        .anyMatch(a -> PlatformRoleConstants.SUPER_ADMIN_ROLE_NAME.equals(a.getAuthority()));
+    if (tenantId == null || superAdmin) {
+      return Ret.data(menuService.menuTree(null, null, null, null, locale, app));
     }
-    return Ret.data(menuService.menuTreeByIds(ceilingService.allowedMenuIds(tenantId), locale));
+    return Ret.data(menuService.menuTreeByIds(ceilingService.allowedMenuIds(tenantId), locale, app));
   }
 }

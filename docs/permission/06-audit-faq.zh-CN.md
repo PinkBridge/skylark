@@ -1,4 +1,4 @@
-## 05. 日志 / 白名单 / FAQ
+## 06. 日志 / 白名单 / FAQ
 
 [English](05-audit-faq.md) | 简体中文
 

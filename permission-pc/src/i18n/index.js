@@ -1,23 +1,9 @@
 import { createI18n } from 'vue-i18n'
 import enMessages from './en'
 import zhMessages from './zh'
+import { resolveDefaultLocale } from '@skylark/i18n-client'
 
-// Read saved locale from localStorage, use default if not found
-const getDefaultLocale = () => {
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const saved = localStorage.getItem('locale')
-      if (saved && (saved === 'zh' || saved === 'en')) {
-        return saved
-      }
-    }
-  } catch (e) {
-    console.warn('Unable to access localStorage:', e)
-  }
-  return 'zh'
-}
-
-const defaultLocale = getDefaultLocale()
+const defaultLocale = resolveDefaultLocale({ supported: ['zh', 'en'], storageKey: 'locale', fallback: 'zh' })
 
 const messages = {
   en: enMessages,

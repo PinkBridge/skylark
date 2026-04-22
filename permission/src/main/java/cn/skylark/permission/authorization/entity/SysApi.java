@@ -11,6 +11,7 @@ public class SysApi {
   private String path;
   private String permlabel;
   private String moduleKey;
+  private String appCode;
   private LocalDateTime createTime;
   private LocalDateTime updateTime;
 }

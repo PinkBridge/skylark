@@ -3,18 +3,25 @@ import http from '@/api/http'
 const APP_NAME = process.env.APP_NAME || 'permission'
 const MENU_PREFIX = "/" + APP_NAME + "/menus"
 
+/** 侧栏 / 可授权菜单树：与 sys_menu.app_code 一致（默认 permission-web） */
+export const MENU_APP_CODE = process.env.VUE_APP_MENU_APP || 'permission-web'
+
 /**
- * Get menu list (tree structure)
+ * Get menu list (tree structure). 管理列表请传入 params.app（OAuth client_id）
  */
-export function getMenuList(params) {
+export function getMenuList(params = {}) {
   return http.get(`${MENU_PREFIX}/tree`, { ...params })
 }
 
 /**
- * Tenant-side grantable menu tree (ceiling-limited)
+ * Tenant-side grantable menu tree (ceiling-limited)。可传 app（OAuth client_id）与其它 query，未传 app 时回退 MENU_APP_CODE。
  */
-export function getGrantableMenuTree() {
-  return http.get(`${MENU_PREFIX}/grantable/tree`)
+export function getGrantableMenuTree(params = {}) {
+  const query = { ...params }
+  if (!query.app && MENU_APP_CODE) {
+    query.app = MENU_APP_CODE
+  }
+  return http.get(`${MENU_PREFIX}/grantable/tree`, query)
 }
 
 /**

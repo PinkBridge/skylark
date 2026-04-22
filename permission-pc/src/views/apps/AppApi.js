@@ -4,6 +4,13 @@ const APP_NAME = process.env.APP_NAME || 'permission'
 const APP_PREFIX = "/" + APP_NAME + "/apps"
 
 /**
+ * 全部 OAuth 客户端（用于菜单「所属应用」等下拉数据源）
+ */
+export function getAppList() {
+  return http.get(`${APP_PREFIX}`)
+}
+
+/**
  * Get app page
  */
 export function getAppPage(currentPage, pageSize, params) {

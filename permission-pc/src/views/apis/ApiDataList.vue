@@ -27,6 +27,7 @@
       <el-table-column prop="path" :label="t('PathLabel')"  width="300"/>
       <el-table-column prop="permlabel" :label="t('PermLabelLabel')"  />
       <el-table-column prop="moduleKey" :label="t('ModuleKeyLabel')"  />
+      <el-table-column prop="appCode" :label="t('AppCodeLabel')" width="180" />
       <el-table-column prop="createTime" :label="t('CreatedAtLabel')"  />
       <el-table-column prop="updateTime" :label="t('UpdatedAtLabel')"  />
       <el-table-column :label="t('OperationsLabel')">

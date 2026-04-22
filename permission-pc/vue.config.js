@@ -2,6 +2,12 @@ const { defineConfig } = require('@vue/cli-service')
 const gatewayTarget = process.env.VUE_APP_GATEWAY_TARGET || 'http://localhost'
 
 module.exports = defineConfig({
+  pages: {
+    index: {
+      entry: 'src/main.js',
+      title: process.env.VUE_APP_DISPLAY_NAME || 'Permission'
+    }
+  },
   transpileDependencies: true,
   devServer: {
     port: 9528,

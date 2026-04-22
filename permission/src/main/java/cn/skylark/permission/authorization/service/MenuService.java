@@ -51,6 +51,9 @@ public class MenuService {
     if (menu != null && !StringUtils.hasText(menu.getNameI18n()) && StringUtils.hasText(menu.getName())) {
       menu.setNameI18n(menuI18nResolver.defaultNameI18nJson(menu.getName()));
     }
+    if (menu != null && !StringUtils.hasText(menu.getAppCode())) {
+      menu.setAppCode("permission-web");
+    }
     return menuMapper.insert(menu);
   }
 
@@ -111,7 +114,15 @@ public class MenuService {
    * @return 菜单列表
    */
   public List<MenuResponseDTO> listDTO(Locale locale) {
+    return listDTO(locale, null);
+  }
+
+  /**
+   * @param app 非空时只返回该 app_code 的菜单
+   */
+  public List<MenuResponseDTO> listDTO(Locale locale, String app) {
     List<SysMenu> menus = menuMapper.selectAll();
+    menus = filterMenusByApp(menus, app);
     // 构建菜单ID到菜单的映射，用于快速查找父菜单
     Map<Long, SysMenu> menuMap = new HashMap<>();
     for (SysMenu menu : menus) {
@@ -156,6 +167,12 @@ public class MenuService {
         dto.setNameI18n(existing.getNameI18n());
       }
     }
+    if (dto != null && !StringUtils.hasText(dto.getAppCode())) {
+      SysMenu existing = menuMapper.selectById(menuId);
+      if (existing != null && StringUtils.hasText(existing.getAppCode())) {
+        dto.setAppCode(existing.getAppCode());
+      }
+    }
     return menuMapper.updateMenuInfo(menuId, dto);
   }
 
@@ -169,8 +186,14 @@ public class MenuService {
    * @return 菜单树
    */
   public List<MenuTreeNode> menuTree(String name, String permlabel, String moduleKey, String path, Locale locale) {
+    return menuTree(name, permlabel, moduleKey, path, locale, null);
+  }
+
+  public List<MenuTreeNode> menuTree(String name, String permlabel, String moduleKey, String path, Locale locale,
+                                     String app) {
     List<SysMenu> menus = menuMapper.selectAll();
-    if (StringUtils.hasText(name) || StringUtils.hasText(permlabel) || 
+    menus = filterMenusByApp(menus, app);
+    if (StringUtils.hasText(name) || StringUtils.hasText(permlabel) ||
         StringUtils.hasText(moduleKey) || StringUtils.hasText(path)) {
       menus = filterMenus(menus, name, permlabel, moduleKey, path);
     }
@@ -187,10 +210,16 @@ public class MenuService {
    * @param path      菜单路径（模糊搜索，可选）
    * @return 菜单树
    */
-  public List<MenuTreeNode> userMenuTree(String username, String name, String permlabel, 
+  public List<MenuTreeNode> userMenuTree(String username, String name, String permlabel,
                                           String moduleKey, String path, Locale locale) {
-    List<SysMenu> menus = menuMapper.selectMenusByUsername(username);
-    if (StringUtils.hasText(name) || StringUtils.hasText(permlabel) || 
+    return userMenuTree(username, name, permlabel, moduleKey, path, locale, null);
+  }
+
+  public List<MenuTreeNode> userMenuTree(String username, String name, String permlabel,
+                                         String moduleKey, String path, Locale locale, String app) {
+    String appCode = StringUtils.hasText(app) ? app.trim() : null;
+    List<SysMenu> menus = menuMapper.selectMenusByUsername(username, appCode);
+    if (StringUtils.hasText(name) || StringUtils.hasText(permlabel) ||
         StringUtils.hasText(moduleKey) || StringUtils.hasText(path)) {
       menus = filterMenus(menus, name, permlabel, moduleKey, path);
     }
@@ -201,10 +230,15 @@ public class MenuService {
    * 按菜单ID集合生成菜单树（同时包含必要的父节点），用于“可授权范围”展示。
    */
   public List<MenuTreeNode> menuTreeByIds(Set<Long> menuIds, Locale locale) {
+    return menuTreeByIds(menuIds, locale, null);
+  }
+
+  public List<MenuTreeNode> menuTreeByIds(Set<Long> menuIds, Locale locale, String app) {
     if (menuIds == null || menuIds.isEmpty()) {
       return Collections.emptyList();
     }
     List<SysMenu> all = menuMapper.selectAll();
+    all = filterMenusByApp(all, app);
     if (all == null || all.isEmpty()) {
       return Collections.emptyList();
     }
@@ -244,7 +278,17 @@ public class MenuService {
    * @param path      菜单路径（模糊搜索，可选）
    * @return 过滤后的菜单列表
    */
-  private List<SysMenu> filterMenus(List<SysMenu> menus, String name, String permlabel, 
+  private List<SysMenu> filterMenusByApp(List<SysMenu> menus, String app) {
+    if (!StringUtils.hasText(app) || menus == null || menus.isEmpty()) {
+      return menus;
+    }
+    String code = app.trim();
+    return menus.stream()
+            .filter(m -> m != null && code.equals(m.getAppCode()))
+            .collect(Collectors.toList());
+  }
+
+  private List<SysMenu> filterMenus(List<SysMenu> menus, String name, String permlabel,
                                      String moduleKey, String path) {
     if (menus == null || menus.isEmpty()) {
       return menus;
@@ -407,6 +451,7 @@ public class MenuService {
     n.setType(m.getType());
     n.setPermlabel(m.getPermlabel());
     n.setModuleKey(m.getModuleKey());
+    n.setAppCode(m.getAppCode());
     n.setCreateTime(m.getCreateTime());
     n.setUpdateTime(m.getUpdateTime());
     n.setChildren(new ArrayList<>());
@@ -462,6 +507,7 @@ public class MenuService {
     dto.setType(menu.getType());
     dto.setPermlabel(menu.getPermlabel());
     dto.setModuleKey(menu.getModuleKey());
+    dto.setAppCode(menu.getAppCode());
     return dto;
   }
 }

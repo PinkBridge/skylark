@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { isAuthenticated } from '../utils/auth'
 import { getAuthorizationUrl } from '../api/oauth'
-import i18n from '@/i18n/index'
 import { getPlatformInitState } from '@/api/init'
+import { syncBrowserTabTitle } from '@/utils/tenant'
 
 // route configuration
 const routes = [
@@ -26,6 +26,15 @@ const routes = [
     meta: {
       title: 'Welcome',
       requiresAuth: false
+    }
+  },
+  {
+    path: '/apps',
+    name: 'Apps',
+    component: () => import('@/views/AppsPage.vue'),
+    meta: {
+      title: 'Apps',
+      requiresAuth: true
     }
   },
   {
@@ -187,8 +196,7 @@ const INIT_STATE_TTL_MS = 5000
 
 // route guard - control access permission
 router.beforeEach(async (to, from, next) => {
-  const titleKey = to.meta.titleI18nKey
-  document.title = titleKey ? i18n.global.t(titleKey) : (to.meta.title || 'Permission App')
+  syncBrowserTabTitle()
 
   const authenticated = isAuthenticated()
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)

@@ -1,0 +1,41 @@
+server:
+  port: 18080
+
+spring:
+  application:
+    name: skylark-demo-service
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# Starter defaults for a brand-new service:
+# - authz: disabled by default (otherwise it requires permissionBaseUrl + client credentials)
+# - datadomain: enabled, but resolve-data-scope disabled by default (no remote call)
+skylark:
+  authz:
+    enabled: false
+    # When you enable it, you must set these:
+    # app-code: demo-service
+    # permission-base-url: http://permission:8080
+    # client-id: demo-service
+    # client-secret: your-secret
+    # sync-fixed-delay-ms: 30000
+    # ignore-paths:
+    #   - /actuator/**
+    #   - /api/demo/**
+  datadomain:
+    enabled: true
+    tenant-header: X-Tenant-Id
+    resolve-data-scope: false
+    # If you turn resolve-data-scope on:
+    # permission-base-url: http://permission:8080
+    # client-id: demo-service
+    # client-secret: your-secret
+    # data-scope-resolve-path: /api/permission/internal/resolved-data-scope
+    # resolve-cache-ttl-ms: 60000
+    #
+    # MyBatis rewrite is opt-in: configure tenant-tables + row-scope-rules when you add MyBatis.
+

@@ -1,0 +1,16 @@
+{
+  "name": "@skylark/admin-shell",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/index.js",
+  "dependencies": {
+    "@skylark/login-redirect-client": "workspace:*"
+  },
+  "peerDependencies": {
+    "@element-plus/icons-vue": "^2.0.0",
+    "element-plus": "^2.0.0",
+    "vue": "^3.2.0",
+    "vue-i18n": "^9.0.0",
+    "vue-router": "^4.0.0"
+  }
+}

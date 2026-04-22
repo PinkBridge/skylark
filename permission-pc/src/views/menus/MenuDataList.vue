@@ -1,6 +1,12 @@
 <template>
   <el-card shadow="always">
-    <MenuSearchForm :search="handleSearch" :reset="handleReset" />
+    <MenuSearchForm
+      :client-ids="oauthClientIds"
+      :app="selectedApp"
+      @update:app="onAppFilterChange"
+      :search="handleSearch"
+      :reset="handleReset"
+    />
     <div class="buttons-block">
       <el-button type="primary" size="default" :icon="Plus" 
       v-permission="'system.menus.new'"
@@ -30,6 +36,7 @@
       <el-table-column prop="path" :label="t('PathLabel')" min-width="150" />
       <el-table-column prop="permlabel" :label="t('PermLabel')" min-width="150" />
       <el-table-column prop="moduleKey" :label="t('ModuleKeyLabel')" min-width="120" />
+      <el-table-column prop="appCode" :label="t('AppCodeLabel')" min-width="130" />
       <el-table-column prop="hidden" :label="t('HiddenLabel')" width="100">
         <template #default="{ row }">
           <el-tag :type="row.hidden == true ? 'danger' : 'success'">
@@ -51,9 +58,21 @@
     </el-table>
     <MenuDetailDialog v-if="detailRow && detailRow.id" :visible="detailDialogVisible" :row="detailRow"
       :onConfirm="handleDetailConfirm" />
-    <MenuCreateDialog :visible="createDialogVisible" :onSubmit="handleCreateSubmit" :onCancel="handleCreateCancel" />
-    <MenuEditDialog v-if="editRow && editRow.id" :visible="editDialogVisible" :row="editRow"
-      :onSubmit="handleEditSubmit" :onCancel="handleEditCancel" />
+    <MenuCreateDialog
+      :visible="createDialogVisible"
+      :client-ids="oauthClientIds"
+      :default-app-code="selectedApp"
+      :onSubmit="handleCreateSubmit"
+      :onCancel="handleCreateCancel"
+    />
+    <MenuEditDialog
+      v-if="editRow && editRow.id"
+      :visible="editDialogVisible"
+      :row="editRow"
+      :client-ids="oauthClientIds"
+      :onSubmit="handleEditSubmit"
+      :onCancel="handleEditCancel"
+    />
   </el-card>
 </template>
 
@@ -61,6 +80,7 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { getMenuList, deleteMenuById } from '@/views/menus/MenuApi'
+import { getAppList } from '@/views/apps/AppApi'
 import { Refresh, Plus } from '@element-plus/icons-vue'
 import * as Icons from '@element-plus/icons-vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
@@ -81,6 +101,12 @@ const editDialogVisible = ref(false)
 const detailRow = ref({})
 const editRow = ref({})
 const searchParams = ref({})
+const oauthClientIds = ref([])
+const selectedApp = ref('')
+
+const onAppFilterChange = (v) => {
+  selectedApp.value = v || ''
+}
 
 // Expand first level only
 const expandFirstLevel = () => {
@@ -94,15 +120,17 @@ const expandFirstLevel = () => {
   })
 }
 
+const normalizeMenuTreeResponse = (response) =>
+  Array.isArray(response) ? response : (response.data || response.list || [])
+
 // init data
 const initData = () => {
-  tableData.value = []
-  searchParams.value = {}
-  getMenuList(searchParams.value).then(response => {
-    // If response is an array, use it directly; if it's an object with data property, use that
-    tableData.value = Array.isArray(response) ? response : (response.data || response.list || [])
+  const app = selectedApp.value || oauthClientIds.value[0] || ''
+  searchParams.value = { ...searchParams.value, app }
+  getMenuList(searchParams.value).then((response) => {
+    tableData.value = normalizeMenuTreeResponse(response)
     expandFirstLevel()
-  }).catch(error => {
+  }).catch((error) => {
     console.error('Failed to get menu list:', error)
     ElMessage.error(error.message || 'Failed to get menu list')
   })
@@ -111,13 +139,16 @@ const initData = () => {
 // reset data
 const handleReset = (params) => {
   searchParams.value = params
+  selectedApp.value = params.app || ''
   initData()
 }
 
 // refresh data
 const handleRefresh = () => {
-  getMenuList(searchParams.value).then(response => {
-    tableData.value = Array.isArray(response) ? response : (response.data || response.list || [])
+  const app = selectedApp.value || oauthClientIds.value[0] || ''
+  searchParams.value = { ...searchParams.value, app }
+  getMenuList(searchParams.value).then((response) => {
+    tableData.value = normalizeMenuTreeResponse(response)
     expandFirstLevel()
   }).catch(error => {
     console.error('Failed to refresh menu list:', error)
@@ -128,8 +159,11 @@ const handleRefresh = () => {
 // filter data
 const handleSearch = (params) => {
   searchParams.value = params
-  getMenuList(searchParams.value).then(response => {
-    tableData.value = Array.isArray(response) ? response : (response.data || response.list || [])
+  if (params.app !== undefined && params.app !== null) {
+    selectedApp.value = params.app
+  }
+  getMenuList(searchParams.value).then((response) => {
+    tableData.value = normalizeMenuTreeResponse(response)
     expandFirstLevel()
   }).catch(error => {
     console.error('Failed to search menu list:', error)
@@ -198,7 +232,20 @@ const handleDelete = (id) => {
 }
 
 // mounted
-onMounted(() => {
+onMounted(async () => {
+  try {
+    const list = await getAppList()
+    const rows = Array.isArray(list) ? list : []
+    oauthClientIds.value = rows
+      .map((c) => c.clientId)
+      .filter(Boolean)
+      .sort()
+    selectedApp.value = oauthClientIds.value[0] || ''
+    searchParams.value = { app: selectedApp.value }
+  } catch (e) {
+    console.error('Failed to load OAuth clients:', e)
+    ElMessage.error(e.message || 'Failed to load OAuth clients')
+  }
   initData()
 })
 </script>

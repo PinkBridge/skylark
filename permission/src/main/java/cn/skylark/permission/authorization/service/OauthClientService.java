@@ -4,7 +4,9 @@ import cn.skylark.permission.authorization.dto.OauthClientPageRequest;
 import cn.skylark.permission.authorization.dto.OauthClientResponseDTO;
 import cn.skylark.permission.authorization.dto.UpdateOauthClientDTO;
 import cn.skylark.permission.authorization.entity.OauthClientDetails;
+import cn.skylark.permission.authorization.entity.SysOauthClientMeta;
 import cn.skylark.permission.authorization.mapper.OauthClientMapper;
+import cn.skylark.permission.authorization.mapper.OauthClientMetaMapper;
 import cn.skylark.permission.utils.PageRequest;
 import cn.skylark.permission.utils.PageResult;
 import org.springframework.beans.BeanUtils;
@@ -12,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
+import java.util.Map;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -26,6 +30,9 @@ public class OauthClientService {
 
   @Resource
   private OauthClientMapper oauthClientMapper;
+
+  @Resource
+  private OauthClientMetaMapper oauthClientMetaMapper;
 
   public OauthClientDetails get(String clientId) {
     return oauthClientMapper.selectByClientId(clientId);
@@ -42,7 +49,9 @@ public class OauthClientService {
    */
   public List<OauthClientResponseDTO> listDTO() {
     List<OauthClientDetails> clients = oauthClientMapper.selectAll();
-    return clients.stream().map(this::convertToDTO).collect(Collectors.toList());
+    List<OauthClientResponseDTO> out = clients.stream().map(this::convertToDTO).collect(Collectors.toList());
+    attachClientMeta(out);
+    return out;
   }
 
   public int create(OauthClientDetails client) {
@@ -65,7 +74,16 @@ public class OauthClientService {
    */
   public OauthClientResponseDTO getDTO(String clientId) {
     OauthClientDetails client = oauthClientMapper.selectByClientId(clientId);
-    return client != null ? convertToDTO(client) : null;
+    if (client == null) {
+      return null;
+    }
+    OauthClientResponseDTO dto = convertToDTO(client);
+    SysOauthClientMeta meta = oauthClientMetaMapper.selectByClientId(clientId);
+    if (meta != null) {
+      dto.setName(meta.getName());
+      dto.setPort(meta.getPort());
+    }
+    return dto;
   }
 
   /**
@@ -78,6 +96,7 @@ public class OauthClientService {
     List<OauthClientDetails> records = oauthClientMapper.selectPage(pageRequest.getOffset(), pageRequest.getLimit());
     Long total = oauthClientMapper.countAll();
     List<OauthClientResponseDTO> dtoList = records.stream().map(this::convertToDTO).collect(Collectors.toList());
+    attachClientMeta(dtoList);
     return new PageResult<>(dtoList, total, pageRequest.getPage(), pageRequest.getSize());
   }
 
@@ -117,6 +136,7 @@ public class OauthClientService {
     }
 
     List<OauthClientResponseDTO> dtoList = records.stream().map(this::convertToDTO).collect(Collectors.toList());
+    attachClientMeta(dtoList);
     return new PageResult<>(dtoList, total, pageRequest.getPage(), pageRequest.getSize());
   }
 
@@ -144,6 +164,29 @@ public class OauthClientService {
     OauthClientResponseDTO dto = new OauthClientResponseDTO();
     BeanUtils.copyProperties(client, dto);
     return dto;
+  }
+
+  private void attachClientMeta(List<OauthClientResponseDTO> dtos) {
+    if (dtos == null || dtos.isEmpty()) {
+      return;
+    }
+    List<SysOauthClientMeta> metas = oauthClientMetaMapper.selectAll();
+    if (metas == null || metas.isEmpty()) {
+      return;
+    }
+    Map<String, SysOauthClientMeta> metaById = metas.stream()
+        .filter(m -> m != null && StringUtils.hasText(m.getClientId()))
+        .collect(Collectors.toMap(SysOauthClientMeta::getClientId, Function.identity(), (a, b) -> a));
+    for (OauthClientResponseDTO dto : dtos) {
+      if (dto == null || !StringUtils.hasText(dto.getClientId())) {
+        continue;
+      }
+      SysOauthClientMeta meta = metaById.get(dto.getClientId());
+      if (meta != null) {
+        dto.setName(meta.getName());
+        dto.setPort(meta.getPort());
+      }
+    }
   }
 }
 
