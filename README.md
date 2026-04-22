@@ -146,6 +146,15 @@ Run scripts from the repo root. They will also keep `docker-compose.yml` and `se
 - Output: `web/apps/order-web/`
 - Also updates: `docker-compose.yml` (adds an `order-web:` block)
 
+#### Register the app before developing a new module
+
+Before you start a new business module (especially a new frontend under `web/apps/<app>`), you should **register an application record** in the Permission system:
+
+- **`oauth_client_details`**: create an OAuth client for your new `client_id` (recommended: same as `VUE_APP_CLIENT_ID`).
+  - Make sure `web_server_redirect_uri` contains `http(s)://<host>:<port>/home` (comma-separated list is allowed).
+- **`sys_oauth_client_meta`**: add `client_id`, `name`, `port`.
+  - This is used by the `permission-app` `/apps` landing page to navigate to other apps using the **current domain/IP + meta port**.
+
 #### Create both service + web in one step
 
 ```powershell

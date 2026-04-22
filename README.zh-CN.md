@@ -146,6 +146,15 @@ docker compose build permission-app
 - 生成目录：`web/apps/order-web/`
 - 同步更新：`docker-compose.yml`（新增 `order-web:` 段落）
 
+#### 新增业务模块前先注册「应用」
+
+在开发新的业务模块（尤其是新增一个前端应用 `web/apps/<app>`）之前，建议先在权限系统里 **新增一条应用记录**：
+
+- **`oauth_client_details`**：新增 OAuth 客户端（`client_id` 推荐与前端 `VUE_APP_CLIENT_ID` 保持一致）
+  - `web_server_redirect_uri` 需要包含 `http(s)://<域名或IP>:<端口>/home`（可逗号分隔多个）
+- **`sys_oauth_client_meta`**：新增 `client_id`、`name`、`port`
+  - `permission-app` 的 `/apps` 页面会使用 **当前域名/IP + meta 端口** 拼接跳转地址进入对应应用
+
 #### 一次生成前后端
 
 ```powershell
