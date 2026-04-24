@@ -5,13 +5,19 @@
     <resultMap id="BaseResult" type="cn.skylark.permission.authorization.entity.SysOauthClientMeta">
         <id column="client_id" property="clientId"/>
         <result column="name" property="name"/>
+        <result column="logo" property="logo"/>
         <result column="port" property="port"/>
+        <result column="is_show" property="show"/>
+        <result column="sort" property="sort"/>
+        <result column="terminal_type" property="terminalType"/>
+        <result column="is_open" property="open"/>
+        <result column="is_delete" property="isDelete"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        client_id, name, port, create_time, update_time
+        client_id, name, logo, port, is_show, sort, terminal_type, is_open, is_delete, create_time, update_time
     </sql>
 
     <select id="selectByClientId" resultMap="BaseResult">
@@ -26,7 +32,18 @@
         SELECT
         <include refid="Base_Column_List"/>
         FROM sys_oauth_client_meta
-        ORDER BY client_id ASC
+        WHERE is_delete = 0
+        ORDER BY sort ASC, client_id ASC
+    </select>
+
+    <select id="selectVisiblePcWeb" resultMap="BaseResult">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_oauth_client_meta
+        WHERE is_delete = 0
+          AND is_show = 1
+          AND terminal_type = 'PC-web'
+        ORDER BY sort ASC, client_id ASC
     </select>
 </mapper>
 

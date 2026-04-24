@@ -5,14 +5,17 @@ import cn.skylark.authz.starter.permission.PermissionSnapshotClient;
 import cn.skylark.authz.starter.permission.ServiceTokenProvider;
 import cn.skylark.authz.starter.sync.AuthzSnapshotSyncJob;
 import cn.skylark.authz.starter.web.AuthzHandlerInterceptor;
+import cn.skylark.authz.starter.web.JwtClaimsAuthenticationFilter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -95,6 +98,16 @@ public class SkylarkAuthzAutoConfiguration {
         registry.addInterceptor(interceptor).addPathPatterns("/**");
       }
     };
+  }
+
+  @Bean
+  @ConditionalOnProperty(prefix = "skylark.authz.jwt", name = "enabled", havingValue = "true")
+  public FilterRegistrationBean<JwtClaimsAuthenticationFilter> skylarkJwtClaimsAuthenticationFilterRegistration(SkylarkAuthzProperties props) {
+    FilterRegistrationBean<JwtClaimsAuthenticationFilter> reg =
+        new FilterRegistrationBean<>(new JwtClaimsAuthenticationFilter(props));
+    // Run early so downstream interceptors (authz/datadomain) can read SecurityContext.
+    reg.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
+    return reg;
   }
 
   @Configuration

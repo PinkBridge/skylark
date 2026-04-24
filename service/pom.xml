@@ -21,8 +21,9 @@
   <modules>
     <module>skylark-authz-spring-boot-starter</module>
     <module>skylark-datadomain-spring-boot-starter</module>
+    <module>skylark-web-common</module>
     <module>skylark-demo-service</module>
-    <module>iot</module>
+    <module>business-service</module>
   </modules>
 
   <properties>

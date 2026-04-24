@@ -14,7 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
- * Reads tenant id from HTTP header into {@link cn.skylark.datadomain.starter.context.DataDomainContext}.
+ * Reads tenant id (and optional org id) from HTTP headers into {@link cn.skylark.datadomain.starter.context.DataDomainContext}.
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -32,6 +32,16 @@ public class TenantHeaderFilter extends OncePerRequestFilter {
           DataDomainContext.setTenantId(Long.parseLong(raw.trim()));
         } catch (NumberFormatException e) {
           log.warn("Invalid tenant header {}: {}", props.getTenantHeader(), raw);
+        }
+      }
+      if (StringUtils.hasText(props.getOrgHeader())) {
+        String orgRaw = request.getHeader(props.getOrgHeader());
+        if (StringUtils.hasText(orgRaw)) {
+          try {
+            DataDomainContext.setOrgId(Long.parseLong(orgRaw.trim()));
+          } catch (NumberFormatException e) {
+            log.warn("Invalid org header {}: {}", props.getOrgHeader(), orgRaw);
+          }
         }
       }
       filterChain.doFilter(request, response);

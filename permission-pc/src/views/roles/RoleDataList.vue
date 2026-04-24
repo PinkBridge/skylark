@@ -15,7 +15,7 @@
       <el-table-column prop="remark" :label="t('RemarkLabel')" />
       <el-table-column prop="createTime" :label="t('CreatedAtLabel')" />
       <el-table-column prop="updateTime" :label="t('UpdatedAtLabel')" />
-      <el-table-column :label="t('OperationsLabel')" min-width="120">
+      <el-table-column :label="t('OperationsLabel')" min-width="120" :show-overflow-tooltip="false">
         <template #default="{ row }">
           <el-button link type="primary" size="default" @click="handleDetail(row)" v-permission="'perm.roles.detail'">
             {{ permLabelName('perm.roles.detail', 'DetailLabel') }}

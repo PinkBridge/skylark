@@ -19,7 +19,8 @@ import reactor.core.publisher.Mono;
  *
  * <p>Rule: /api/{service}/** -> http://{service}/** (container DNS name == service name)</p>
  *
- * <p>Note: permission routes are explicitly configured and should win by route order.</p>
+ * <p>Skips paths handled by static gateway routes (see {@code application.yml}): those
+ * services expect the full {@code /api/{service}/...} path on the downstream request.</p>
  */
 @Component
 public class DynamicApiServiceGatewayFilter implements GlobalFilter, Ordered {
@@ -39,6 +40,10 @@ public class DynamicApiServiceGatewayFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
         if (path.startsWith("/api/permission/")) {
+            return chain.filter(exchange);
+        }
+        // business-api-service route: controllers use full /api/business-service/** prefix.
+        if (path.startsWith("/api/business-service/")) {
             return chain.filter(exchange);
         }
 

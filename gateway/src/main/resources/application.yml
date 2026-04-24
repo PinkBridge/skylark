@@ -27,6 +27,13 @@ spring:
             - Path=/api/permission/**
           filters:
             - PreserveHostHeader
+        - id: business-api-service
+          uri: ${services.business.uri:http://business-service}
+          order: -10
+          predicates:
+            - Path=/api/business-service/**
+          filters:
+            - PreserveHostHeader
         - id: permission-oauth-service
           uri: ${services.permission.uri:http://permission}
           order: -10

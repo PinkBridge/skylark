@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.skylark.business_service.blog.mapper.BlogPostMapper">
+
+  <resultMap id="BlogPostMap" type="cn.skylark.business_service.blog.model.BlogPost">
+    <id column="id" property="id"/>
+    <result column="tenant_id" property="tenantId"/>
+    <result column="org_id" property="orgId"/>
+    <result column="title" property="title"/>
+    <result column="summary" property="summary"/>
+    <result column="content" property="content"/>
+    <result column="status" property="status"/>
+    <result column="tags" property="tags"/>
+    <result column="is_delete" property="isDelete"/>
+    <result column="create_user" property="createUser"/>
+    <result column="update_user" property="updateUser"/>
+    <result column="create_time" property="createTime"/>
+    <result column="update_time" property="updateTime"/>
+  </resultMap>
+
+  <insert id="insert" parameterType="cn.skylark.business_service.blog.model.BlogPost" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO biz_blog_post(title, summary, content, status, tags, is_delete)
+    VALUES (#{title}, #{summary}, #{content}, #{status}, #{tags}, 0)
+  </insert>
+
+  <update id="updateByIdAndTenant">
+    UPDATE biz_blog_post
+    SET title = #{post.title},
+        summary = #{post.summary},
+        content = #{post.content},
+        status = #{post.status},
+        tags = #{post.tags}
+    WHERE id = #{id}
+      AND tenant_id = #{tenantId}
+      AND is_delete = 0
+  </update>
+
+  <update id="softDeleteByIdAndTenant">
+    UPDATE biz_blog_post
+    SET is_delete = 1
+    WHERE id = #{id}
+      AND tenant_id = #{tenantId}
+      AND is_delete = 0
+  </update>
+
+  <select id="findByIdAndTenant" resultMap="BlogPostMap">
+    SELECT *
+    FROM biz_blog_post
+    WHERE id = #{id}
+      AND tenant_id = #{tenantId}
+      AND is_delete = 0
+  </select>
+
+  <sql id="PageWhere">
+    tenant_id = #{tenantId}
+    AND is_delete = 0
+    <if test="status != null and status != ''">
+      AND status = #{status}
+    </if>
+    <if test="keyword != null and keyword != ''">
+      AND (title LIKE CONCAT('%', #{keyword}, '%') OR summary LIKE CONCAT('%', #{keyword}, '%'))
+    </if>
+  </sql>
+
+  <select id="countPage" resultType="long">
+    SELECT COUNT(1)
+    FROM biz_blog_post
+    WHERE <include refid="PageWhere"/>
+  </select>
+
+  <select id="selectPage" resultMap="BlogPostMap">
+    SELECT *
+    FROM biz_blog_post
+    WHERE <include refid="PageWhere"/>
+    ORDER BY create_time DESC
+    LIMIT #{size} OFFSET #{offset}
+  </select>
+</mapper>
+

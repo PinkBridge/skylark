@@ -14,6 +14,63 @@ function Fail($msg) {
   exit 1
 }
 
+function Start-ComposeServiceIfPossible([string]$ServiceName) {
+  if ([string]::IsNullOrWhiteSpace($ServiceName)) { return }
+
+  try {
+    $null = Get-Command docker -ErrorAction Stop
+  } catch {
+    Write-Host "Skip auto-start: docker not found."
+    return
+  }
+
+  $composePath = Join-Path $repoRoot "docker-compose.yml"
+  if (-not (Test-Path $composePath)) {
+    Write-Host "Skip auto-start: docker-compose.yml not found."
+    return
+  }
+
+  # Verify service exists in current compose config.
+  $exists = $false
+  try {
+    $all = docker compose config --services 2>$null
+    if ($LASTEXITCODE -eq 0 -and $all) {
+      foreach ($svc in $all) {
+        if ($svc -eq $ServiceName) { $exists = $true; break }
+      }
+    }
+  } catch {
+    # If we can't query, still try to start it.
+    $exists = $true
+  }
+
+  if (-not $exists) {
+    Write-Host "Skip auto-start: service '$ServiceName' not found in docker compose."
+    return
+  }
+
+  Write-Host "Auto-starting frontend service: $ServiceName"
+  try {
+    docker compose up -d --build $ServiceName | Out-Host
+    if ($LASTEXITCODE -ne 0) {
+      Write-Host "Auto-start: docker compose up failed (exit=$LASTEXITCODE). You can retry:"
+      Write-Host "  docker compose up -d --build $ServiceName"
+      return
+    }
+  } catch {
+    Write-Host "Auto-start: docker compose up threw an error. You can retry:"
+    Write-Host "  docker compose up -d --build $ServiceName"
+    return
+  }
+
+  Write-Host "Startup result:"
+  try {
+    docker compose ps $ServiceName | Out-Host
+  } catch {
+    # ignore
+  }
+}
+
 function Replace-InFile([string]$Path, [hashtable]$Replacements) {
   if (!(Test-Path $Path)) { return }
   $content = Get-Content -LiteralPath $Path -Raw
@@ -145,3 +202,6 @@ Write-Host "Next:"
 Write-Host "  Register OAuth client in permission (redirect URIs for your dev port and /home)."
 Write-Host "  pnpm -C `"$repoRoot\web`" install"
 Write-Host "  pnpm -C `"$repoRoot\web`" --filter $AppName run serve"
+
+# Best-effort: after scaffolding, auto-start this frontend service and show status.
+Start-ComposeServiceIfPossible -ServiceName $AppName

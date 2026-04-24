@@ -27,7 +27,8 @@ public class OauthClientController {
 
   @GetMapping
   public Ret<List<OauthClientResponseDTO>> list() {
-    return Ret.data(oauthClientService.listDTO());
+    // /apps only shows visible PC-web apps by sys_oauth_client_meta.
+    return Ret.data(oauthClientService.listVisiblePcWebDTO());
   }
 
   /**

@@ -9,8 +9,10 @@ WORKDIR /skylark-frontend
 RUN corepack enable && corepack prepare pnpm@9 --activate
 
 # Lockfile lists this importer; pnpm needs the project root to exist.
-RUN mkdir -p /permission-pc
+RUN mkdir -p /permission-pc/vendor/i18n-client /permission-pc/vendor/login-redirect-client
 COPY permission-pc/package.json /permission-pc/package.json
+COPY permission-pc/vendor/i18n-client/package.json /permission-pc/vendor/i18n-client/package.json
+COPY permission-pc/vendor/login-redirect-client/package.json /permission-pc/vendor/login-redirect-client/package.json
 
 COPY web/pnpm-lock.yaml web/package.json web/pnpm-workspace.yaml ./
 

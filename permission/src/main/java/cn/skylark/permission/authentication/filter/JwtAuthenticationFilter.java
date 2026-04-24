@@ -19,6 +19,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 /**
  * JWT Filter
@@ -33,6 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private static final String BEARER_PREFIX = "Bearer ";
   private static final String TOKEN_USER_NAME_KEY = "user_name";
+  private static final String TOKEN_CLIENT_ID_KEY = "client_id";
 
   @Resource
   private OauthConfig oauthConfig;
@@ -64,12 +67,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     if (username == null) {
       username = body.getSubject();
     }
+    String clientId = (String) body.get(TOKEN_CLIENT_ID_KEY);
     Authentication existingAuth = SecurityContextHolder.getContext().getAuthentication();
     if (username != null && existingAuth == null) {
       UserDetails userDetails = userDetailsService.loadUserByUsername(username);
       Authentication authentication = new UsernamePasswordAuthenticationToken(
               userDetails, null, userDetails.getAuthorities());
       SecurityContextHolder.getContext().setAuthentication(authentication);
+      return;
+    }
+    // client_credentials tokens may not have user_name/sub; treat client_id as an authenticated principal.
+    if (existingAuth == null && clientId != null && !clientId.trim().isEmpty()) {
+      Authentication authentication = new UsernamePasswordAuthenticationToken(
+          clientId.trim(),
+          null,
+          Collections.singletonList(new SimpleGrantedAuthority("ROLE_SERVICE"))
+      );
+      SecurityContextHolder.getContext().setAuthentication(authentication);
+      return;
     } else {
       log.warn("Skipping authentication setup - username: {}, existingAuth: {}",
               username, existingAuth != null ? "present" : "null");

@@ -19,7 +19,7 @@
       </el-table-column>
       <el-table-column prop="loginTime" :label="t('LoginTimeLabel')" width="180" />
       <el-table-column prop="createTime" :label="t('CreatedAtLabel')" width="180" />
-      <el-table-column :label="t('OperationsLabel')" min-width="180" fixed="right">
+      <el-table-column :label="t('OperationsLabel')" min-width="180" fixed="right" :show-overflow-tooltip="false">
         <template #default="{ row }">
           <el-button link type="primary" size="default" @click="handleDetail(row)" v-permission="'logger.login.detail'">
             {{ permLabelName('logger.login.detail', 'DetailLabel') }}

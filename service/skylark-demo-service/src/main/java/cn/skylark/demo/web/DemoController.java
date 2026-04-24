@@ -9,7 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/demo")
+@RequestMapping("/api/business-service/demo")
 public class DemoController {
 
   @GetMapping("/ping")

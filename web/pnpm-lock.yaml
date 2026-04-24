@@ -60,7 +60,7 @@ importers:
         specifier: ^8.0.3
         version: 8.7.1(eslint@7.32.0)
 
-  apps/iot-web:
+  apps/business-web:
     dependencies:
       '@element-plus/icons-vue':
         specifier: ^2.3.1

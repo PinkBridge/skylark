@@ -3,6 +3,9 @@ services:
     image: mysql:8.0
     container_name: skylark-mysql
     restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
     environment:
       - TZ=Asia/Shanghai
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
@@ -34,6 +37,7 @@ services:
     environment:
       - TZ=Asia/Shanghai
       - services.permission.uri=${GATEWAY_PERMISSION_URI:-http://permission}
+      - services.business.uri=${GATEWAY_BUSINESS_URI:-http://business-service}
     depends_on:
       permission:
         condition: service_started
@@ -63,7 +67,7 @@ services:
       - "${PERMISSION_PORT:-19527}:80"
     environment:
       - TZ=Asia/Shanghai
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${PERMISSION_DB_NAME:-skylark_permission}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${PERMISSION_DB_NAME:-skylark_permission}?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
       - SPRING_DATASOURCE_USERNAME=${PERMISSION_DB_USERNAME:-root}
       - SPRING_DATASOURCE_PASSWORD=${PERMISSION_DB_PASSWORD:-123456}
       - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
@@ -76,25 +80,40 @@ services:
 
 
 
-  iot:
+  business-service:
     build:
       context: .
-      dockerfile: service/iot/Dockerfile
+      dockerfile: service/business-service/Dockerfile
       args:
         MAVEN_BUILD_IMAGE: ${MAVEN_BUILD_IMAGE:-maven:3.9-eclipse-temurin-17}
         JRE_IMAGE: ${JRE_IMAGE:-eclipse-temurin:17-jre-alpine}
-    container_name: iot
+    container_name: business-service
     restart: unless-stopped
     environment:
       - TZ=Asia/Shanghai
       - SERVER_PORT=80
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${BUSINESS_DB_NAME:-skylark_business}?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=${BUSINESS_DB_USERNAME:-root}
+      - SPRING_DATASOURCE_PASSWORD=${BUSINESS_DB_PASSWORD:-123456}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
+      - OAUTH_SIGNINGKEY=${OAUTH_SIGNINGKEY:-374SJADK&*@!SHSAshhsdevops(90)}
+      - SKYLARK_AUTHZ_ENABLED=true
+      - SKYLARK_AUTHZ_APP_CODE=business-service
+      - SKYLARK_AUTHZ_PERMISSION_BASE_URL=http://permission
+      - SKYLARK_AUTHZ_CLIENT_ID=skylark-service
+      - SKYLARK_AUTHZ_CLIENT_SECRET=112233
+      - SKYLARK_AUTHZ_SYNC_FIXED_DELAY_MS=30000
+      - SKYLARK_AUTHZ_IGNORE_PATHS_0=/actuator/**
+    depends_on:
+      mysql:
+        condition: service_healthy
 
 
-  iot-web:
+  business-web:
     build:
       context: .
-      dockerfile: web/apps/iot-web/Dockerfile
-    container_name: iot-web
+      dockerfile: web/apps/business-web/Dockerfile
+    container_name: business-web
     restart: unless-stopped
     ports:
       - "9531:80"

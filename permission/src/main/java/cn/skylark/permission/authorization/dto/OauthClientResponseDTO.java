@@ -23,9 +23,19 @@ public class OauthClientResponseDTO {
   private String name;
 
   /**
+   * logo（来自 sys_oauth_client_meta.logo）
+   */
+  private String logo;
+
+  /**
    * UI 端口（来自 sys_oauth_client_meta.port）
    */
   private Integer port;
+
+  /**
+   * 是否开放访问（来自 sys_oauth_client_meta.is_open）
+   */
+  private Boolean open;
 
   /**
    * 资源ID列表

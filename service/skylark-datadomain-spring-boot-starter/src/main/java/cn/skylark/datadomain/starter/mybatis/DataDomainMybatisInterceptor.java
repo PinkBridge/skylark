@@ -9,6 +9,7 @@ import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.Parenthesis;
+import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
@@ -35,6 +36,9 @@ import org.apache.ibatis.plugin.Plugin;
 import org.apache.ibatis.plugin.Signature;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -332,6 +336,7 @@ public class DataDomainMybatisInterceptor implements Interceptor {
         }
       }
     }
+    appendSoftDeleteWhereIfNeeded(plainSelect, table);
     appendRowDataScopeWhere(plainSelect, table);
     return select.toString();
   }
@@ -352,34 +357,42 @@ public class DataDomainMybatisInterceptor implements Interceptor {
         }
       }
     }
-    if (hasTenantId) {
-      return originalSql;
-    }
-    if (columns == null) {
-      insert.setColumns(columns = new ArrayList<>());
-    }
-    columns.add(new net.sf.jsqlparser.schema.Column(tenantCol));
-    String insertSql = insert.toString();
-    if (insertSql.contains(tenantCol) && insertSql.toUpperCase(Locale.ROOT).contains("VALUES")) {
-      int valuesIndex = insertSql.toUpperCase(Locale.ROOT).indexOf("VALUES");
-      if (valuesIndex > 0) {
-        String beforeValues = insertSql.substring(0, valuesIndex).trim();
-        String afterValues = insertSql.substring(valuesIndex);
-        int firstParen = afterValues.indexOf('(');
-        if (firstParen >= 0) {
-          int matchingParen = findMatchingParen(afterValues, firstParen);
-          if (matchingParen > firstParen) {
-            String valuesContent = afterValues.substring(firstParen + 1, matchingParen);
-            String trimmed = valuesContent.trim();
-            if (!trimmed.isEmpty() && !trimmed.endsWith(",")) {
-              trimmed += ", ";
+    if (!hasTenantId) {
+      if (columns == null) {
+        insert.setColumns(columns = new ArrayList<>());
+      }
+      columns.add(new net.sf.jsqlparser.schema.Column(tenantCol));
+      String insertSql = insert.toString();
+      if (insertSql.contains(tenantCol) && insertSql.toUpperCase(Locale.ROOT).contains("VALUES")) {
+        int valuesIndex = insertSql.toUpperCase(Locale.ROOT).indexOf("VALUES");
+        if (valuesIndex > 0) {
+          String beforeValues = insertSql.substring(0, valuesIndex).trim();
+          String afterValues = insertSql.substring(valuesIndex);
+          int firstParen = afterValues.indexOf('(');
+          if (firstParen >= 0) {
+            int matchingParen = findMatchingParen(afterValues, firstParen);
+            if (matchingParen > firstParen) {
+              String valuesContent = afterValues.substring(firstParen + 1, matchingParen);
+              String trimmed = valuesContent.trim();
+              if (!trimmed.isEmpty() && !trimmed.endsWith(",")) {
+                trimmed += ", ";
+              }
+              trimmed += tenantId;
+              insertSql = beforeValues + " " + afterValues.substring(0, firstParen + 1) +
+                  trimmed + afterValues.substring(matchingParen);
             }
-            trimmed += tenantId;
-            return beforeValues + " " + afterValues.substring(0, firstParen + 1) +
-                trimmed + afterValues.substring(matchingParen);
           }
         }
       }
+      try {
+        insert = (Insert) CCJSqlParserUtil.parse(insertSql);
+      } catch (JSQLParserException e) {
+        return insertSql;
+      }
+    }
+
+    if (props.isAutoFillAuditFields()) {
+      insert = applyAuditColumnsToInsert(insert);
     }
     return insert.toString();
   }
@@ -420,8 +433,150 @@ public class DataDomainMybatisInterceptor implements Interceptor {
     } else {
       update.setWhere(tenantCondition);
     }
+    appendSoftDeleteMutationWhereIfNeeded(table, update::getWhere, update::setWhere);
     appendRowDataScopeMutation(table, update::getWhere, update::setWhere);
+    if (props.isAutoFillAuditFields()) {
+      applyAuditColumnsToUpdate(update);
+    }
     return update.toString();
+  }
+
+  private Insert applyAuditColumnsToInsert(Insert insert) {
+    Table table = insert.getTable();
+    if (table == null || !isTenantTable(table.getName())) {
+      return insert;
+    }
+    List<net.sf.jsqlparser.schema.Column> columns = insert.getColumns();
+    if (columns == null || columns.isEmpty()) {
+      return insert;
+    }
+
+    String createCol = props.getCreateUserColumn();
+    String updateCol = props.getUpdateUserColumn();
+    String orgCol = props.getOrgIdColumn();
+
+    String username = currentUsername();
+    Long orgId = DataDomainContext.getOrgId();
+
+    List<String> addCols = new ArrayList<>();
+    List<String> addVals = new ArrayList<>();
+
+    if (StringUtils.hasText(createCol) && !hasColumn(columns, createCol) && StringUtils.hasText(username)) {
+      addCols.add(createCol);
+      addVals.add(sqlStringLiteral(username));
+    }
+    if (StringUtils.hasText(updateCol) && !hasColumn(columns, updateCol) && StringUtils.hasText(username)) {
+      addCols.add(updateCol);
+      addVals.add(sqlStringLiteral(username));
+    }
+    if (StringUtils.hasText(orgCol) && !hasColumn(columns, orgCol) && orgId != null) {
+      addCols.add(orgCol);
+      addVals.add(String.valueOf(orgId));
+    }
+    if (addCols.isEmpty()) {
+      return insert;
+    }
+
+    for (String c : addCols) {
+      columns.add(new net.sf.jsqlparser.schema.Column(c));
+    }
+
+    String insertSql = insert.toString();
+    if (!insertSql.toUpperCase(Locale.ROOT).contains("VALUES")) {
+      return insert;
+    }
+    int valuesIndex = insertSql.toUpperCase(Locale.ROOT).indexOf("VALUES");
+    String beforeValues = insertSql.substring(0, valuesIndex).trim();
+    String afterValues = insertSql.substring(valuesIndex);
+    int firstParen = afterValues.indexOf('(');
+    if (firstParen < 0) {
+      return insert;
+    }
+    int matchingParen = findMatchingParen(afterValues, firstParen);
+    if (matchingParen <= firstParen) {
+      return insert;
+    }
+    String valuesContent = afterValues.substring(firstParen + 1, matchingParen);
+    String trimmed = valuesContent.trim();
+    if (!trimmed.isEmpty() && !trimmed.endsWith(",")) {
+      trimmed += ", ";
+    }
+    trimmed += String.join(", ", addVals);
+    String rebuilt = beforeValues + " " + afterValues.substring(0, firstParen + 1) + trimmed + afterValues.substring(matchingParen);
+    try {
+      return (Insert) CCJSqlParserUtil.parse(rebuilt);
+    } catch (JSQLParserException e) {
+      return insert;
+    }
+  }
+
+  private void applyAuditColumnsToUpdate(Update update) {
+    Table table = update.getTable();
+    if (table == null || !isTenantTable(table.getName())) {
+      return;
+    }
+    List<Column> cols = update.getColumns();
+    List<Expression> exprs = update.getExpressions();
+    if (cols == null) {
+      cols = new ArrayList<>();
+      update.setColumns(cols);
+    }
+    if (exprs == null) {
+      exprs = new ArrayList<>();
+      update.setExpressions(exprs);
+    }
+
+    String updateCol = props.getUpdateUserColumn();
+    String orgCol = props.getOrgIdColumn();
+    String username = currentUsername();
+    Long orgId = DataDomainContext.getOrgId();
+
+    if (StringUtils.hasText(updateCol) && !hasColumn(cols, updateCol) && StringUtils.hasText(username)) {
+      cols.add(new Column(updateCol));
+      exprs.add(new StringValue(username));
+    }
+    if (props.isApplyOrgIdOnUpdate() && StringUtils.hasText(orgCol) && !hasColumn(cols, orgCol) && orgId != null) {
+      cols.add(new Column(orgCol));
+      exprs.add(new LongValue(orgId));
+    }
+  }
+
+  private static boolean hasColumn(List<? extends Column> columns, String name) {
+    if (columns == null || !StringUtils.hasText(name)) {
+      return false;
+    }
+    for (Column c : columns) {
+      if (c == null || c.getColumnName() == null) {
+        continue;
+      }
+      if (name.equalsIgnoreCase(c.getColumnName())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static String sqlStringLiteral(String raw) {
+    if (raw == null) {
+      return "NULL";
+    }
+    String escaped = raw.replace("'", "''");
+    return "'" + escaped + "'";
+  }
+
+  private static String currentUsername() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null || !auth.isAuthenticated()) {
+      return null;
+    }
+    Object p = auth.getPrincipal();
+    if (p instanceof UserDetails) {
+      return ((UserDetails) p).getUsername();
+    }
+    if (p instanceof String) {
+      return (String) p;
+    }
+    return auth.getName();
   }
 
   private String processDelete(Delete delete, Long tenantId, String originalSql) {
@@ -445,8 +600,100 @@ public class DataDomainMybatisInterceptor implements Interceptor {
     } else {
       delete.setWhere(tenantCondition);
     }
+    appendSoftDeleteMutationWhereIfNeeded(table, delete::getWhere, delete::setWhere);
     appendRowDataScopeMutation(table, delete::getWhere, delete::setWhere);
+    if (shouldRewriteDeleteToSoftDelete(table)) {
+      return rewriteDeleteToSoftDeleteUpdate(delete, table);
+    }
     return delete.toString();
+  }
+
+  private void appendSoftDeleteWhereIfNeeded(PlainSelect plainSelect, Table table) {
+    if (!shouldApplySoftDeleteOnTable(table)) {
+      return;
+    }
+    String col = props.getSoftDelete().getColumn();
+    if (!StringUtils.hasText(col)) {
+      return;
+    }
+    Expression where = plainSelect.getWhere();
+    if (where != null && where.toString().contains(col)) {
+      return;
+    }
+    EqualsTo cond = new EqualsTo();
+    cond.setLeftExpression(new Column(table, col));
+    cond.setRightExpression(new LongValue(props.getSoftDelete().getActiveValue()));
+    if (where != null) {
+      plainSelect.setWhere(new AndExpression(where, cond));
+    } else {
+      plainSelect.setWhere(cond);
+    }
+  }
+
+  private void appendSoftDeleteMutationWhereIfNeeded(Table table,
+      java.util.function.Supplier<Expression> getWhere,
+      java.util.function.Consumer<Expression> setWhere) {
+    if (!shouldApplySoftDeleteOnTable(table)) {
+      return;
+    }
+    String col = props.getSoftDelete().getColumn();
+    if (!StringUtils.hasText(col)) {
+      return;
+    }
+    Expression where = getWhere.get();
+    if (where != null && where.toString().contains(col)) {
+      return;
+    }
+    EqualsTo cond = new EqualsTo();
+    cond.setLeftExpression(new Column(table, col));
+    cond.setRightExpression(new LongValue(props.getSoftDelete().getActiveValue()));
+    if (where != null) {
+      setWhere.accept(new AndExpression(where, cond));
+    } else {
+      setWhere.accept(cond);
+    }
+  }
+
+  private boolean shouldApplySoftDeleteOnTable(Table table) {
+    if (table == null) {
+      return false;
+    }
+    SkylarkDataDomainProperties.SoftDeleteProperties sd = props.getSoftDelete();
+    if (sd == null || !sd.isEnabled()) {
+      return false;
+    }
+    String name = normalizeTableName(table.getName());
+    List<String> applyTables = sd.getTables();
+    if (applyTables == null || applyTables.isEmpty()) {
+      applyTables = props.getTenantTables();
+    }
+    return isListedTable(name, applyTables);
+  }
+
+  private boolean shouldRewriteDeleteToSoftDelete(Table table) {
+    SkylarkDataDomainProperties.SoftDeleteProperties sd = props.getSoftDelete();
+    return sd != null && sd.isEnabled() && sd.isRewriteDeleteToUpdate() && shouldApplySoftDeleteOnTable(table);
+  }
+
+  private String rewriteDeleteToSoftDeleteUpdate(Delete delete, Table table) {
+    SkylarkDataDomainProperties.SoftDeleteProperties sd = props.getSoftDelete();
+    if (sd == null) {
+      return delete.toString();
+    }
+    String col = sd.getColumn();
+    if (!StringUtils.hasText(col)) {
+      return delete.toString();
+    }
+    Update update = new Update();
+    update.setTable(table);
+    List<Column> cols = new ArrayList<>(1);
+    cols.add(new Column(table, col));
+    update.setColumns(cols);
+    List<Expression> exprs = new ArrayList<>(1);
+    exprs.add(new LongValue(sd.getDeletedValue()));
+    update.setExpressions(exprs);
+    update.setWhere(delete.getWhere());
+    return update.toString();
   }
 
   private boolean isTenantTable(String tableName) {

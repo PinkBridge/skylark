@@ -12,7 +12,7 @@
     <template v-for="group in menuItems" :key="group.id">
       <el-sub-menu :index="String(group.id)">
         <template #title>
-          <component v-if="group.icon" :is="Icons[group.icon]" class="el-icon" />
+          <component v-if="group.icon && Icons[group.icon]" :is="Icons[group.icon]" class="el-icon" />
           <span>{{ group.name }}</span>
         </template>
         <el-menu-item
@@ -20,7 +20,7 @@
           :key="item.id"
           :index="resolveMenuIndex(item)"
         >
-          <component v-if="item.icon" :is="Icons[item.icon]" class="el-icon" />
+          <component v-if="item.icon && Icons[item.icon]" :is="Icons[item.icon]" class="el-icon" />
           <span>{{ item.name }}</span>
         </el-menu-item>
       </el-sub-menu>

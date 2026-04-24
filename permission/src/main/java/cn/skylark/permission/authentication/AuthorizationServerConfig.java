@@ -12,11 +12,14 @@ import org.springframework.security.oauth2.config.annotation.web.configurers.Aut
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer;
 import org.springframework.security.oauth2.provider.code.AuthorizationCodeServices;
 import org.springframework.security.oauth2.provider.code.JdbcAuthorizationCodeServices;
+import org.springframework.security.oauth2.provider.token.TokenEnhancer;
+import org.springframework.security.oauth2.provider.token.TokenEnhancerChain;
 import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter;
 import org.springframework.security.oauth2.provider.token.store.JwtTokenStore;
 
 import javax.annotation.Resource;
 import javax.sql.DataSource;
+import java.util.Arrays;
 
 /**
  * OAuth2 AuthorizationServerConfig
@@ -37,6 +40,8 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
   private DataSource dataSource;
   @Resource
   private UserDetailsService userDetailsService;
+  @Resource
+  private TokenEnhancer customClaimsTokenEnhancer;
 
   @Bean
   public AuthorizationCodeServices authorizationCodeServices() {
@@ -59,9 +64,12 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 
   @Override
   public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
+    TokenEnhancerChain chain = new TokenEnhancerChain();
+    chain.setTokenEnhancers(Arrays.asList(customClaimsTokenEnhancer, accessTokenConverter()));
     endpoints.authenticationManager(authenticationManager)
             .tokenStore(jwtTokenStore())
             .accessTokenConverter(accessTokenConverter())
+            .tokenEnhancer(chain)
             .authorizationCodeServices(authorizationCodeServices())
             // reload user details when refreshing the token
             .userDetailsService(userDetailsService)

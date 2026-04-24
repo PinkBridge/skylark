@@ -11,5 +11,7 @@ public interface OauthClientMetaMapper {
   SysOauthClientMeta selectByClientId(@Param("clientId") String clientId);
 
   List<SysOauthClientMeta> selectAll();
+
+  List<SysOauthClientMeta> selectVisiblePcWeb();
 }
 

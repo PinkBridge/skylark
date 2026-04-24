@@ -30,7 +30,7 @@
       <el-table-column prop="appCode" :label="t('AppCodeLabel')" width="180" />
       <el-table-column prop="createTime" :label="t('CreatedAtLabel')"  />
       <el-table-column prop="updateTime" :label="t('UpdatedAtLabel')"  />
-      <el-table-column :label="t('OperationsLabel')">
+      <el-table-column :label="t('OperationsLabel')" :show-overflow-tooltip="false">
         <template #default="{ row }">
           <el-button link type="primary" size="default" @click="handleDetail(row)" v-permission="'system.apis.detail'">
             {{ permLabelName('system.apis.detail', 'DetailLabel') }}

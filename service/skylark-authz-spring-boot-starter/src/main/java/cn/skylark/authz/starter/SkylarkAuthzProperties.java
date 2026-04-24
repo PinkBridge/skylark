@@ -61,5 +61,28 @@ public class SkylarkAuthzProperties {
    * If true, unauthenticated requests (not in ignorePaths) are rejected with 401.
    */
   private boolean requireAuthentication = true;
+
+  /**
+   * JWT authentication (parses JWT into Spring Security context).
+   * <p>
+   * When enabled, the starter will:
+   * - validate Authorization: Bearer token using {@link JwtProperties#signingKey}
+   * - set Authentication into SecurityContextHolder if absent
+   * - copy JWT payload (claims) into Authentication.details as a Map so other starters (e.g. datadomain) can read it
+   */
+  private JwtProperties jwt = new JwtProperties();
+
+  @Data
+  public static class JwtProperties {
+    /**
+     * Enable JWT parsing filter. Default false to avoid changing security behavior unexpectedly.
+     */
+    private boolean enabled = false;
+
+    /**
+     * Signing key used by permission service to sign JWT (same as permission `oauth.signingKey`).
+     */
+    private String signingKey;
+  }
 }
 

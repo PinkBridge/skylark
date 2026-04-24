@@ -37,7 +37,7 @@
       <el-table-column prop="description" :label="t('DescriptionLabel')" min-width="200" show-overflow-tooltip />
       <el-table-column prop="createTime" :label="t('CreatedAtLabel')" width="180" />
       <el-table-column prop="updateTime" :label="t('UpdatedAtLabel')" width="180" />
-      <el-table-column :label="t('OperationsLabel')" min-width="180" fixed="right">
+      <el-table-column :label="t('OperationsLabel')" min-width="180" fixed="right" :show-overflow-tooltip="false">
         <template #default="{ row }">
           <el-button
             link

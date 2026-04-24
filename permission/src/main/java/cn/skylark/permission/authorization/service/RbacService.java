@@ -32,7 +32,10 @@ public class RbacService {
       new AntPathRequestMatcher("/api/permission/users/me", "GET"),
       new AntPathRequestMatcher("/api/permission/users/me", "PUT"),
       new AntPathRequestMatcher("/api/permission/users/me/password", "PUT"),
-      new AntPathRequestMatcher("/api/permission/menus/me/tree", "GET")
+      new AntPathRequestMatcher("/api/permission/menus/me/tree", "GET"),
+      // Service-to-service bootstrap endpoints for starters (RBAC snapshot sync).
+      new AntPathRequestMatcher("/api/permission/authz/snapshot", "GET"),
+      new AntPathRequestMatcher("/api/permission/gateway/whitelist/snapshot", "GET")
   };
 
   @Resource

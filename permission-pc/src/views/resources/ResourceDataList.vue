@@ -33,7 +33,7 @@
       </el-table-column>
       <el-table-column prop="createTime" :label="t('CreatedAtLabel')" width="180" />
       <el-table-column prop="updateTime" :label="t('UpdatedAtLabel')" width="180" />
-      <el-table-column :label="t('OperationsLabel')" min-width="260" fixed="right">
+      <el-table-column :label="t('OperationsLabel')" min-width="260" fixed="right" :show-overflow-tooltip="false">
         <template #default="{ row }">
           <el-button link type="primary" size="default" @click="handleDetail(row)" v-permission="'perm.resources.detail'">
             {{ permLabelName('perm.resources.detail', 'DetailLabel') }}

@@ -3,9 +3,9 @@ package cn.skylark.datadomain.starter;
 import cn.skylark.datadomain.starter.mybatis.DataDomainMybatisInterceptor;
 import org.apache.ibatis.plugin.Interceptor;
 import org.apache.ibatis.session.SqlSessionFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,8 +15,8 @@ import org.springframework.context.annotation.Configuration;
  * JVM 反射主配置类方法时会要求 classpath 上存在 MyBatis。
  */
 @Configuration
-@ConditionalOnClass(name = "org.apache.ibatis.plugin.Interceptor")
-@ConditionalOnBean(SqlSessionFactory.class)
+@AutoConfigureAfter(name = "org.mybatis.spring.boot.autoconfigure.MybatisAutoConfiguration")
+@ConditionalOnClass({SqlSessionFactory.class, Interceptor.class})
 public class SkylarkDataDomainMybatisAutoConfiguration {
 
   @Bean

@@ -18,14 +18,16 @@ Bring up the permission subsystem from scratch and verify that it works.
 docker compose up -d --build
 ```
 
-2. **Verify basic reachability**
+2. **Database initialization**
 
-- Admin UI: `http://localhost:9527` (default)
-- Gateway: `http://localhost:80` (default)
-- Permission service: `http://localhost:19527` (default)
+On first start, MySQL will initialize the data directory, and `permission` will run Flyway migrations automatically.
+
+3. **Verify basic reachability**
+
+- Admin UI: `http://localhost:9527` (default)  
 Please replace localhost to the real ip or domain.
 
-3. **System initialization (first run wizard)**
+4. **System initialization (first run wizard)**
 
 If the system is not initialized, the Admin UI will automatically redirect to the initialization wizard page: `http://localhost:9527/init`.
 
@@ -37,7 +39,7 @@ If the system is not initialized, the Admin UI will automatically redirect to th
 - **Submit**
   - After submitting successfully, the system  redirects to the Welcome page: `http://localhost:9527/welcome`.
 
-4. **View service logs**
+5. **View service logs**
 
 ```bash
 # All services
@@ -55,10 +57,6 @@ docker compose logs -f mysql
 # Last 200 lines
 docker compose logs --tail=200 permission
 ```
-
-5. **Database initialization**
-
-On first start, MySQL will initialize data directory, and `permission` will run Flyway migrations automatically.
 
 ### Re-run initialization (optional)
 

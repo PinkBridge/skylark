@@ -41,7 +41,7 @@
           {{ formatArray(row.resourceIds) }}
         </template>
       </el-table-column>
-      <el-table-column :label="t('OperationsLabel')" min-width="150" fixed="right">
+      <el-table-column :label="t('OperationsLabel')" min-width="150" fixed="right" :show-overflow-tooltip="false">
         <template #default="{ row }">
           <el-button link type="primary" size="default" @click="handleDetail(row)" v-permission="'system.apps.detail'">
             {{ permLabelName('system.apps.detail', 'DetailLabel') }}

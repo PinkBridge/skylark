@@ -16,6 +16,39 @@ public class SkylarkDataDomainProperties {
   private String tenantHeader = "X-Tenant-Id";
 
   /**
+   * Optional HTTP header for organization id (gateway or client sets this).
+   * Parsed into {@link cn.skylark.datadomain.starter.context.DataDomainContext} for optional audit/org auto-fill.
+   */
+  private String orgHeader = "X-Org-Id";
+
+  /**
+   * When true, MyBatis interceptor will append missing audit columns on INSERT/UPDATE for tenant tables:
+   * {@link #createUserColumn}, {@link #updateUserColumn}, {@link #orgIdColumn} (org id on INSERT by default;
+   * UPDATE controlled by {@link #applyOrgIdOnUpdate}).
+   * <p>
+   * Note: this only fills columns that are <b>missing</b> from the SQL column list / UPDATE SET clause
+   * (same behavior as {@code tenant_id} auto-append).
+   */
+  private boolean autoFillAuditFields = false;
+
+  /** DB column name for creator username. */
+  private String createUserColumn = "create_user";
+
+  /** DB column name for updater username. */
+  private String updateUserColumn = "update_user";
+
+  /** DB column name for organization id. */
+  private String orgIdColumn = "org_id";
+
+  /**
+   * When true, UPDATE statements may also set {@link #orgIdColumn} from {@link cn.skylark.datadomain.starter.context.DataDomainContext}
+   * if the column is not already present in SET clause.
+   * <p>
+   * Default false: org is usually immutable after insert.
+   */
+  private boolean applyOrgIdOnUpdate = false;
+
+  /**
    * When true, after Spring Security authentication, resolve data scope into {@link cn.skylark.datadomain.starter.context.DataDomainContext}.
    */
   private boolean resolveDataScope = false;
@@ -54,6 +87,39 @@ public class SkylarkDataDomainProperties {
 
   /** Row-scope rules per logical table name (lowercase match). */
   private List<RowScopeTableRule> rowScopeRules = new ArrayList<>();
+
+  /**
+   * Soft delete support.
+   * <p>
+   * When enabled, interceptor will:
+   * - append {@link #softDeleteColumn} = {@link #softDeleteActiveValue} to SELECT/UPDATE/DELETE (if not already present)
+   * - optionally rewrite DELETE into UPDATE setting {@link #softDeleteColumn} = {@link #softDeleteDeletedValue}
+   */
+  private SoftDeleteProperties softDelete = new SoftDeleteProperties();
+
+  @Data
+  public static class SoftDeleteProperties {
+    /** Enable soft-delete SQL rewriting. Default false (opt-in). */
+    private boolean enabled = false;
+
+    /** Column used as soft-delete flag. */
+    private String column = "is_delete";
+
+    /** Value meaning "not deleted". */
+    private long activeValue = 0L;
+
+    /** Value meaning "deleted". */
+    private long deletedValue = 1L;
+
+    /**
+     * Tables to apply soft-delete on. Empty means fallback to {@link SkylarkDataDomainProperties#tenantTables}.
+     * Table name match is case-insensitive (normalized).
+     */
+    private List<String> tables = new ArrayList<>();
+
+    /** When true, rewrite DELETE statements into UPDATE setting deletedValue. */
+    private boolean rewriteDeleteToUpdate = true;
+  }
 
   @Data
   public static class RowScopeTableRule {

@@ -19,14 +19,16 @@
 docker compose up -d --build
 ```
 
-2. **验证基础访问**
+2. **数据库初始化说明**
 
-- 管理端：`http://localhost:9527`（默认）
-- 网关：`http://localhost:80`（默认）
-- 权限服务：`http://localhost:19527`（默认）
+首次启动时 MySQL 会初始化数据目录；`permission` 会自动执行 Flyway 迁移，创建表结构与基础数据。
+
+3. **验证基础访问**
+
+- 管理端：`http://localhost:9527`（默认）  
 注意将 localhost 替换成实际部署的服务器ip或者域名
 
-3. **首次初始化（初始化向导）**
+4. **首次初始化（初始化向导）**
 
 当系统处于“未初始化”状态时，管理端会自动跳转到初始化向导页面：`http://localhost:9527/init`。
 
@@ -38,7 +40,7 @@ docker compose up -d --build
 - **提交完成**
   - 提交成功后系统会跳转到欢迎页：`http://localhost:9527/welcome`。
 
-4. **查看模块日志**
+5. **查看模块日志**
 
 ```bash
 # 查看全部服务日志（持续跟踪）
@@ -56,10 +58,6 @@ docker compose logs -f mysql
 # 查看 permission 最近 200 行
 docker compose logs --tail=200 permission
 ```
-
-5. **数据库初始化说明**
-
-首次启动时 MySQL 会初始化数据目录；`permission` 会自动执行 Flyway 迁移，创建表结构与基础数据。
 
 ### 重新执行初始化（可选）
 

@@ -14,7 +14,7 @@
       <el-table-column prop="durationMs" :label="t('DurationMsLabel')" width="110" />
       <el-table-column prop="clientIp" :label="t('LoginIpLabel')" min-width="130" />
       <el-table-column prop="createdAt" :label="t('CreatedAtLabel')" width="180" />
-      <el-table-column :label="t('OperationsLabel')" min-width="120" fixed="right">
+      <el-table-column :label="t('OperationsLabel')" min-width="120" fixed="right" :show-overflow-tooltip="false">
         <template #default="{ row }">
           <el-button link type="primary" size="default" @click="handleDetail(row)"
             v-permission="'logger.operation.detail'">

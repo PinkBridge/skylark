@@ -16,7 +16,8 @@ param(
 
   [string]$AppDisplayName,
 
-  [string]$MysqlContainerName = "mysql",
+  # docker-compose.yml sets: services.mysql.container_name=skylark-mysql
+  [string]$MysqlContainerName = "skylark-mysql",
 
   [string]$MysqlRootPassword = "123456",
 
@@ -30,6 +31,138 @@ $ErrorActionPreference = "Stop"
 function Fail($msg) {
   Write-Error $msg
   exit 1
+}
+
+function Test-ContainerRunning([string]$ContainerName) {
+  try {
+    $status = docker inspect -f '{{.State.Status}}' $ContainerName 2>$null
+    if ($LASTEXITCODE -ne 0) { return $false }
+    return ($status -eq "running")
+  } catch {
+    return $false
+  }
+}
+
+function Test-ContainerHealthyIfDefined([string]$ContainerName) {
+  # If no healthcheck is defined, treat as healthy.
+  try {
+    $health = docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' $ContainerName 2>$null
+    if ($LASTEXITCODE -ne 0) { return $false }
+    if ([string]::IsNullOrWhiteSpace($health)) { return $true }
+    return ($health -eq "healthy")
+  } catch {
+    return $false
+  }
+}
+
+function Ensure-ComposeMysqlReadyOrWarn() {
+  # Best-effort: detect if compose service 'mysql' is up and healthy.
+  try {
+    $null = Get-Command docker -ErrorAction Stop
+  } catch {
+    return $false
+  }
+
+  $hasComposeFile = $false
+  try {
+    $composePath = Join-Path $repoRoot "docker-compose.yml"
+    $hasComposeFile = (Test-Path $composePath)
+  } catch { }
+
+  if (-not $hasComposeFile) {
+    # Can't reliably infer service status without compose file; fallback to container checks.
+    return (Test-ContainerRunning $MysqlContainerName -and (Test-ContainerHealthyIfDefined $MysqlContainerName))
+  }
+
+  try {
+    $cid = docker compose ps -q mysql 2>$null
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($cid)) {
+      Write-Host "Skip app registration: docker compose service 'mysql' is not started."
+      Write-Host "Please start it, then re-run this script:"
+      Write-Host "  docker compose up -d mysql"
+      return $false
+    }
+  } catch {
+    Write-Host "Skip app registration: failed to query docker compose service status."
+    Write-Host "Please ensure services are up, then re-run:"
+    Write-Host "  docker compose up -d mysql"
+    return $false
+  }
+
+  if (-not (Test-ContainerRunning $MysqlContainerName)) {
+    Write-Host "Skip app registration: container '$MysqlContainerName' is not running."
+    Write-Host "Please start MySQL, then re-run:"
+    Write-Host "  docker compose up -d mysql"
+    return $false
+  }
+
+  if (-not (Test-ContainerHealthyIfDefined $MysqlContainerName)) {
+    Write-Host "Skip app registration: container '$MysqlContainerName' is not healthy yet."
+    Write-Host "Please wait for MySQL to become healthy, or restart it:"
+    Write-Host "  docker compose up -d mysql"
+    return $false
+  }
+
+  return $true
+}
+
+function Start-ComposeServicesIfPossible([string[]]$ServicesToStart) {
+  if (-not $ServicesToStart -or $ServicesToStart.Count -eq 0) { return }
+
+  try {
+    $null = Get-Command docker -ErrorAction Stop
+  } catch {
+    Write-Host "Skip auto-start: docker not found."
+    return
+  }
+
+  $composePath = Join-Path $repoRoot "docker-compose.yml"
+  if (-not (Test-Path $composePath)) {
+    Write-Host "Skip auto-start: docker-compose.yml not found."
+    return
+  }
+
+  # Filter to services that actually exist in this compose file.
+  $existing = @()
+  try {
+    $all = docker compose config --services 2>$null
+    if ($LASTEXITCODE -eq 0 -and $all) {
+      $set = @{}
+      $all | ForEach-Object { $set[$_] = $true }
+      foreach ($svc in $ServicesToStart) {
+        if ($set.ContainsKey($svc)) { $existing += $svc }
+      }
+    }
+  } catch {
+    # If we can't query, still try to start requested services.
+    $existing = $ServicesToStart
+  }
+
+  if (-not $existing -or $existing.Count -eq 0) {
+    Write-Host "Skip auto-start: target services not found in compose: $($ServicesToStart -join ', ')"
+    return
+  }
+
+  Write-Host "Auto-starting services: $($existing -join ', ')"
+  try {
+    docker compose up -d --build @existing | Out-Host
+    if ($LASTEXITCODE -ne 0) {
+      Write-Host "Auto-start: docker compose up failed (exit=$LASTEXITCODE). You can retry:"
+      Write-Host "  docker compose up -d --build $($existing -join ' ')"
+      return
+    }
+  } catch {
+    Write-Host "Auto-start: docker compose up threw an error. You can retry:"
+    Write-Host "  docker compose up -d --build $($existing -join ' ')"
+    return
+  }
+
+  Write-Host "Startup result:"
+  try {
+    docker compose ps @existing | Out-Host
+  } catch {
+    # ignore
+  }
 }
 
 function Replace-InFile([string]$Path, [hashtable]$Replacements) {
@@ -58,6 +191,12 @@ function Register-OauthAppRecordIfPossible() {
     $null = Get-Command docker -ErrorAction Stop
   } catch {
     Write-Host "Skip app registration: docker not found. SQL to run manually:"
+    Write-Host $script:sqlAppUpsert
+    return
+  }
+
+  if (-not (Ensure-ComposeMysqlReadyOrWarn)) {
+    Write-Host "SQL to run manually:"
     Write-Host $script:sqlAppUpsert
     return
   }
@@ -175,6 +314,24 @@ $repl = @{
 }
 
 Replace-InFile -Path (Join-Path $targetDir "pom.xml") -Replacements $repl
+
+# Ensure common web DTO module is included (Ret/PageResult), for consistency with other services.
+$svcPomPath = Join-Path $targetDir "pom.xml"
+if (Test-Path $svcPomPath) {
+  $svcPom = Get-Content -LiteralPath $svcPomPath -Raw
+  if ($svcPom -notmatch "<artifactId>skylark-web-common</artifactId>") {
+    $depBlock = @"
+
+    <dependency>
+      <groupId>cn.skylark</groupId>
+      <artifactId>skylark-web-common</artifactId>
+      <version>`${project.version}</version>
+    </dependency>
+"@
+    $svcPom = $svcPom -replace "(?m)^\s*</dependencies>\s*$", ($depBlock + "`r`n  </dependencies>")
+    Set-Content -LiteralPath $svcPomPath -Value $svcPom -NoNewline
+  }
+}
 Replace-InFile -Path (Join-Path $targetDir "src\main\resources\application.yml") -Replacements @{
   "port: 18080" = "port: $Port"
   "name: skylark-demo-service" = "name: $ArtifactId"
@@ -266,4 +423,9 @@ ON DUPLICATE KEY UPDATE
 "@
 
 Register-OauthAppRecordIfPossible
+
+# Best-effort: after scaffolding, auto-start backend service and show status.
+if (-not [string]::IsNullOrWhiteSpace($ServiceName)) {
+  Start-ComposeServicesIfPossible -ServicesToStart @($ServiceName)
+}
 

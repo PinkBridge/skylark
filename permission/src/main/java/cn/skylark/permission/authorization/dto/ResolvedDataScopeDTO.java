@@ -33,4 +33,9 @@ public class ResolvedDataScopeDTO {
 
   /** 参与解析的数据域 id（便于审计） */
   private List<Long> sourceDataDomainIds = new ArrayList<>();
+
+  /**
+   * Subject user id (for SELF data scope and downstream services).
+   */
+  private Long userId;
 }

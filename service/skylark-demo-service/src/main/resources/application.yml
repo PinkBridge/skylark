@@ -25,7 +25,7 @@ skylark:
     # sync-fixed-delay-ms: 30000
     # ignore-paths:
     #   - /actuator/**
-    #   - /api/demo/**
+    #   - /api/business-service/demo/**
   datadomain:
     enabled: true
     tenant-header: X-Tenant-Id

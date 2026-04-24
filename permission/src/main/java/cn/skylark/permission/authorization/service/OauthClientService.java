@@ -16,6 +16,7 @@ import org.springframework.util.StringUtils;
 import javax.annotation.Resource;
 import java.util.Map;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -51,6 +52,45 @@ public class OauthClientService {
     List<OauthClientDetails> clients = oauthClientMapper.selectAll();
     List<OauthClientResponseDTO> out = clients.stream().map(this::convertToDTO).collect(Collectors.toList());
     attachClientMeta(out);
+    return out;
+  }
+
+  /**
+   * /apps page bootstrap list:
+   * only show sys_oauth_client_meta where is_show=true and terminal_type=PC-web, ordered by sort.
+   */
+  public List<OauthClientResponseDTO> listVisiblePcWebDTO() {
+    List<SysOauthClientMeta> metas = oauthClientMetaMapper.selectVisiblePcWeb();
+    if (metas == null || metas.isEmpty()) {
+      return List.of();
+    }
+    Set<String> allowed = metas.stream()
+        .filter(m -> m != null && StringUtils.hasText(m.getClientId()))
+        .map(m -> m.getClientId().trim())
+        .collect(Collectors.toSet());
+    List<OauthClientDetails> clients = oauthClientMapper.selectAll();
+    List<OauthClientResponseDTO> out = clients.stream()
+        .filter(c -> c != null && StringUtils.hasText(c.getClientId()) && allowed.contains(c.getClientId().trim()))
+        .map(this::convertToDTO)
+        .collect(Collectors.toList());
+    // Attach meta (name/port) in sort order.
+    attachClientMeta(out, metas);
+    // Sort output by meta.sort then clientId
+    Map<String, Integer> sortById = metas.stream()
+        .filter(m -> m != null && StringUtils.hasText(m.getClientId()))
+        .collect(Collectors.toMap(m -> m.getClientId().trim(), m -> m.getSort() == null ? 0 : m.getSort(), (a, b) -> a));
+    out.sort((a, b) -> {
+      String aid = a == null ? null : a.getClientId();
+      String bid = b == null ? null : b.getClientId();
+      int as = aid != null && sortById.containsKey(aid) ? sortById.get(aid) : 0;
+      int bs = bid != null && sortById.containsKey(bid) ? sortById.get(bid) : 0;
+      int c = Integer.compare(as, bs);
+      if (c != 0) return c;
+      if (aid == null && bid == null) return 0;
+      if (aid == null) return 1;
+      if (bid == null) return -1;
+      return aid.compareTo(bid);
+    });
     return out;
   }
 
@@ -171,6 +211,10 @@ public class OauthClientService {
       return;
     }
     List<SysOauthClientMeta> metas = oauthClientMetaMapper.selectAll();
+    attachClientMeta(dtos, metas);
+  }
+
+  private void attachClientMeta(List<OauthClientResponseDTO> dtos, List<SysOauthClientMeta> metas) {
     if (metas == null || metas.isEmpty()) {
       return;
     }
@@ -184,7 +228,9 @@ public class OauthClientService {
       SysOauthClientMeta meta = metaById.get(dto.getClientId());
       if (meta != null) {
         dto.setName(meta.getName());
+        dto.setLogo(meta.getLogo());
         dto.setPort(meta.getPort());
+        dto.setOpen(meta.getOpen());
       }
     }
   }

@@ -12,13 +12,16 @@ function flattenMenu(tree) {
 }
 
 export function createHasPermission(options) {
-  const { fetchMenuTree } = options || {}
+  const { fetchMenuTree, getAccessToken } = options || {}
   let loaded = false
   let loadingPromise = null
   let permSet = new Set()
 
   async function ensureLoaded() {
     if (loaded) return
+    if (typeof getAccessToken === 'function' && !getAccessToken()) {
+      return
+    }
     if (loadingPromise) return loadingPromise
     loadingPromise = Promise.resolve()
       .then(() => (fetchMenuTree ? fetchMenuTree() : []))
@@ -38,6 +41,9 @@ export function createHasPermission(options) {
 
   return function hasPermission(permlabel) {
     if (!permlabel) return true
+    if (typeof getAccessToken === 'function' && !getAccessToken()) {
+      return false
+    }
     if (!loaded) {
       // fire-and-forget load to avoid blocking rendering
       ensureLoaded()

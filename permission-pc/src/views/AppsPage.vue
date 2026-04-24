@@ -12,12 +12,21 @@
 
       <el-row v-else :gutter="16" class="grid">
         <el-col v-for="app in apps" :key="app.clientId" :xs="24" :sm="12" :md="8" :lg="6">
-          <el-card shadow="hover" class="app-card" @click="openApp(app)">
+          <el-card
+            shadow="hover"
+            class="app-card"
+          >
             <div class="card-body">
-              <div class="card-title">{{ resolveAppName(app) }}</div>
-              <div class="card-sub">{{ app.clientId }}</div>
+              <div class="card-head">
+                <img v-if="app?.logo" class="app-logo" :src="app.logo" :alt="resolveAppName(app)" />
+                <div v-else class="app-logo placeholder">{{ resolveAppAbbr(app) }}</div>
+                <div class="card-text">
+                  <div class="card-title">{{ resolveAppName(app) }}</div>
+                  <div class="card-sub">{{ app.clientId }}</div>
+                </div>
+              </div>
               <div class="card-actions">
-                <el-button type="primary" size="small" @click.stop="openApp(app)">
+                <el-button type="primary" size="small" :disabled="!isOpen(app)" @click.stop="openApp(app)">
                   {{ t('AppsPageEnter') }}
                 </el-button>
               </div>
@@ -50,6 +59,13 @@ function resolveAppName(app) {
   return v != null && String(v).trim() ? String(v).trim() : '-'
 }
 
+function resolveAppAbbr(app) {
+  const name = resolveAppName(app)
+  const s = String(name || '').trim()
+  if (!s || s === '-') return '?'
+  return s.slice(0, 1).toUpperCase()
+}
+
 function toAppEntryUrl(app) {
   const port = app?.port
   if (!port) return ''
@@ -60,7 +76,16 @@ function toAppEntryUrl(app) {
   return `${protocol}//${hostname}:${port}/home`
 }
 
+function isOpen(app) {
+  // default open if backend doesn't send it
+  return app?.open !== false
+}
+
 function openApp(app) {
+  if (!isOpen(app)) {
+    ElMessage.warning(t('AppsPageOpenFailed'))
+    return
+  }
   const target = toAppEntryUrl(app)
   if (!target) {
     ElMessage.warning(t('AppsPageOpenFailed'))
@@ -129,6 +154,33 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.app-logo.placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.card-text {
+  flex: 1;
+  min-width: 0;
 }
 
 .card-title {

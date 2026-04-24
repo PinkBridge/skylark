@@ -5,7 +5,8 @@ Reusable **tenant + data domain (row scope)** support for Skylark business servi
 ## What it provides
 
 1. **`TenantHeaderFilter`**  
-   Reads `X-Tenant-Id` (configurable) into `DataDomainContext` and clears context at end of request.
+   Reads `X-Tenant-Id` (configurable) and optional `X-Org-Id` (configurable) into `DataDomainContext`,
+   and clears context at end of request.
 
 2. **`DataScopeHandlerInterceptor`** (optional)  
    After Spring Security authentication, resolves `ResolvedDataScopeDTO` and writes flags into `DataDomainContext`.
@@ -14,6 +15,8 @@ Reusable **tenant + data domain (row scope)** support for Skylark business servi
    Rewrites SQL similarly to `permission`’s `TenantInterceptor`:
    - Adds `tenant_id = ?` for configured tenant tables
    - Applies row scope (`org_id IN (...)`, `id IN (...)`, `self column = userId`) based on `DataDomainContext` + `row-scope-rules`
+   - Optional audit auto-fill (`auto-fill-audit-fields=true`): appends missing `create_user`, `update_user`, `org_id`
+     on `INSERT` / `UPDATE` for tenant tables (same “missing column only” rule as `tenant_id` append)
 
 ## Configuration
 
@@ -22,6 +25,12 @@ skylark:
   datadomain:
     enabled: true
     tenant-header: X-Tenant-Id
+    org-header: X-Org-Id
+    auto-fill-audit-fields: false
+    create-user-column: create_user
+    update-user-column: update_user
+    org-id-column: org_id
+    apply-org-id-on-update: false
     # Remote resolve (requires permission HTTP API — see below)
     resolve-data-scope: false
     permission-base-url: http://permission:8080

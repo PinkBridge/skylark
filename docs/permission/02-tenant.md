@@ -17,7 +17,7 @@ Create a tenant and assign a tenant admin.
 
 - Navigate to the tenant management page.
 
-1. **Create a tenant**
+2. **Create a tenant**
 
 - In the create/edit form, fill in the following fields from top to bottom:
 - **Name** (required)
@@ -31,17 +31,17 @@ Create a tenant and assign a tenant admin.
 - **Status** (e.g. Active / Disabled)
 - **Expire time**
 
-1. **Create a tenant role**
+3. **Create a tenant role**
 
 - Create a role for the tenant (suggest clear names such as `TENANT_ADMIN`, `TENANT_OPERATOR`, `TENANT_READONLY`).
 - Grant **menu permissions**, **API permissions** (see `04-role-menu-api.md`), and **data domains** as needed.
 
-1. **Create a tenant admin**
+4. **Create a tenant admin**
 
 - Click the action button on the newly created tenant row to create a tenant admin.
 - Select the newly created tenant role and set the admin **username** and **password**.
 
-1. **Visit the new tenant domain**
+5. **Visit the new tenant domain**
 
 - Visit the new tenant domain and log in with the tenant admin account to manage tenant data.
 - Click the **Tenant profile** button and update the information for the tenant you created.

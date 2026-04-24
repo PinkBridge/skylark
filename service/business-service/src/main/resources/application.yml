@@ -1,0 +1,74 @@
+server:
+  port: 18081
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+spring:
+  application:
+    name: business-service
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  datasource:
+    url: jdbc:mysql://localhost:3306/skylark_business?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: dev
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+oauth:
+  signingKey: 374SJADK&*@!SHSAshhsdevops(90)
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+# Starter defaults for a brand-new service:
+# - authz: disabled by default (otherwise it requires permissionBaseUrl + client credentials)
+# - datadomain: enabled, but resolve-data-scope disabled by default (no remote call)
+skylark:
+  authz:
+    jwt:
+      enabled: true
+      signing-key: 374SJADK&*@!SHSAshhsdevops(90)
+    # When you enable it, you must set these:
+    # app-code: demo-service
+    # permission-base-url: http://permission:8080
+    # client-id: demo-service
+    # client-secret: your-secret
+    # sync-fixed-delay-ms: 30000
+    # ignore-paths:
+    #   - /actuator/**
+    #   - /api/business-service/demo/**
+  datadomain:
+    enabled: true
+    soft-delete:
+      enabled: true
+    tenant-header: X-Tenant-Id
+    # Optional org header -> DataDomainContext.orgId (used when auto-fill-audit-fields=true)
+    org-header: X-Org-Id
+    # Auto-fill create_user/update_user/org_id on INSERT/UPDATE for tenant-tables (missing columns only)
+    auto-fill-audit-fields: true
+    apply-org-id-on-update: false
+    tenant-tables:
+      - biz_blog_post
+    resolve-data-scope: false
+    # If you turn resolve-data-scope on:
+    # permission-base-url: http://permission:8080
+    # client-id: demo-service
+    # client-secret: your-secret
+    # data-scope-resolve-path: /api/permission/internal/resolved-data-scope
+    # resolve-cache-ttl-ms: 60000
+    #
+    # MyBatis rewrite is opt-in: configure tenant-tables + row-scope-rules when you add MyBatis.
+

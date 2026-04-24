@@ -13,6 +13,32 @@ const service = axios.create({
   timeout: 15000
 })
 
+function inOAuthCallbackWindow() {
+  try {
+    if (typeof window === 'undefined' || !window.location) return false
+    return String(window.location.search || '').includes('code=')
+  } catch (e) {
+    return false
+  }
+}
+
+function shouldLogoutOn401(data) {
+  const msg = (data && (data.message || data.msg)) ? String(data.message || data.msg) : ''
+  const fatalKeys = new Set([
+    'expired.jwt.unauthorized',
+    'check.jwt.exception',
+    'UNAUTHORIZED',
+    'user.not.login',
+    'user.info.not.available'
+  ])
+  if (fatalKeys.has(msg)) return true
+  const lower = msg.toLowerCase()
+  if (lower.includes('expired') && lower.includes('jwt')) return true
+  if (lower.includes('jwt') && (lower.includes('invalid') || lower.includes('malformed'))) return true
+  if (lower.includes('token') && (lower.includes('expired') || lower.includes('invalid'))) return true
+  return false
+}
+
 service.interceptors.request.use(
   (config) => {
     const token = getAccessToken()
@@ -38,8 +64,12 @@ service.interceptors.response.use(
     }
     if (data && data.code === 401) {
       ElMessage.error(t('UnauthorizedNotice'))
-      clearTokens()
-      window.location.href = '/welcome'
+      // During OAuth callback (/home?code=...), child views may fire API calls before the token
+      // exchange completes. Avoid clearing session in this transient state.
+      if (getAccessToken() && !inOAuthCallbackWindow() && shouldLogoutOn401(data)) {
+        clearTokens()
+        window.location.href = '/welcome'
+      }
       return Promise.reject(data.message)
     }
     if (data && data.code === 403) {
@@ -59,8 +89,10 @@ service.interceptors.response.use(
       message = data?.message || data?.msg || message
       if (status === 401) {
         message = t('UnauthorizedNotice')
-        clearTokens()
-        window.location.href = '/welcome'
+        if (getAccessToken() && !inOAuthCallbackWindow() && shouldLogoutOn401(data)) {
+          clearTokens()
+          window.location.href = '/welcome'
+        }
       }
     } else if (error.message?.includes('timeout')) {
       message = t('RequestTimeoutNotice')

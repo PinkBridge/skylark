@@ -48,6 +48,7 @@ public class DataDomainResolutionService {
     if (user == null) {
       return out;
     }
+    out.setUserId(user.getId());
     Long tenantId = user.getTenantId();
     Long userOrgId = user.getOrgId();
 

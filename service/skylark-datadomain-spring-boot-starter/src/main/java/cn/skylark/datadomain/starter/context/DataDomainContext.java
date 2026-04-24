@@ -11,6 +11,7 @@ import java.util.List;
 public final class DataDomainContext {
 
   private static final ThreadLocal<Long> TENANT_ID = new ThreadLocal<>();
+  private static final ThreadLocal<Long> ORG_ID = new ThreadLocal<>();
   private static final ThreadLocal<Boolean> ALL_PLATFORM = new ThreadLocal<>();
   private static final ThreadLocal<Boolean> WHOLE_TENANT = new ThreadLocal<>();
   private static final ThreadLocal<Boolean> SELF_ONLY = new ThreadLocal<>();
@@ -23,6 +24,18 @@ public final class DataDomainContext {
 
   public static Long getTenantId() {
     return TENANT_ID.get();
+  }
+
+  public static void setOrgId(Long orgId) {
+    if (orgId == null) {
+      ORG_ID.remove();
+      return;
+    }
+    ORG_ID.set(orgId);
+  }
+
+  public static Long getOrgId() {
+    return ORG_ID.get();
   }
 
   public static void setAllPlatformDataScope(boolean v) {
@@ -75,6 +88,7 @@ public final class DataDomainContext {
 
   public static void clear() {
     TENANT_ID.remove();
+    ORG_ID.remove();
     ALL_PLATFORM.remove();
     WHOLE_TENANT.remove();
     SELF_ONLY.remove();
