@@ -4,11 +4,13 @@ English | [简体中文](README.zh-CN.md)
 
 ### 1. Overview
 
-Skylark is a **front-end/back-end separated** multi-tenant management system starter. It currently includes an **API gateway** and a **Permission subsystem (OAuth2 + RBAC)**.
+Skylark is a **front-end/back-end separated** multi-tenant management system starter. It currently includes an **API gateway**, a **Permission subsystem (OAuth2 + RBAC + Data Domains)**, and **business modules (example + scaffoldable templates)**.
 
 - **Gateway**: `gateway` (Spring Cloud Gateway)
-- **Permission service**: `permission` (Spring Boot, OAuth2 Authorization Server + RBAC Resource Server)
+- **Permission service**: `permission` (Spring Boot, OAuth2 Authorization Server + RBAC Resource Server + Data Domains)
 - **Admin UI**: `permission-pc` (Compose service name: `permission-app`, Nginx static hosting + reverse proxy)
+- **Example business service**: `service/business-service` (Compose service name: `business-service`)
+- **Example business web app**: `web/apps/business-web` (Compose service name: `business-web`)
 - **Database**: `mysql` (MySQL 8)
 
 ### 2. Architecture
@@ -17,22 +19,31 @@ Skylark is a **front-end/back-end separated** multi-tenant management system sta
 
 ```text
 Browser
-  └── permission-app (Nginx:80)
+  ├── permission-app (Nginx:80)
+  │     ├── /            -> static assets (SPA)
+  │     ├── /api/**      -> gateway:80
+  │     ├── /oauth/**    -> gateway:80
+  │     └── /login/**    -> gateway:80
+  │                      └── gateway (Spring Cloud Gateway:80)
+  │                            ├── /api/permission/** -> permission:80
+  │                            ├── /oauth/**          -> permission:80
+  │                            ├── /login/**          -> permission:80
+  │                            └── /api/business/**   -> business-service:80
+  │
+  └── business-web (Nginx:80)
         ├── /            -> static assets (SPA)
         ├── /api/**      -> gateway:80
         ├── /oauth/**    -> gateway:80
         └── /login/**    -> gateway:80
-                         └── gateway (Spring Cloud Gateway:80)
-                               ├── /api/permission/** -> permission:80
-                               ├── /oauth/**          -> permission:80
-                               └── /login/**          -> permission:80
 
 permission (Spring Boot:80) -> mysql:3306
+business-service (Spring Boot:80) -> mysql:3306
 ```
 
 #### Ports & entrypoints
 
 - **Admin UI**: `http://localhost:9527` (override with `PERMISSION_APP_PORT`)
+- **Business web app (business-web)**: `http://localhost:9531` (fixed mapping in current Compose)
 - **Gateway**: `http://localhost:80` (override with `GATEWAY_PORT`)
 - **Permission service**: `http://localhost:19527` (override with `PERMISSION_PORT`)
 - **MySQL**: host `3307` -> container `3306` (fixed mapping in Compose)
