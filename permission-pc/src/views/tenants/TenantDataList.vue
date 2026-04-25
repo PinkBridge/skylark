@@ -38,8 +38,15 @@
               {{ permLabelName('perm.tenants.detail', 'DetailLabel') }}
             </el-button>
             <el-button link type="primary" v-permission="'perm.tenants.edit'" size="default" @click="handleEdit(row)">{{ permLabelName('perm.tenants.edit', 'EditLabel') }}</el-button>
-            <el-button link type="primary" v-permission="'perm.tenants.edit'" size="default" @click="handleCreateTenantAdmin(row)">
-              {{ t('NewTenantAdminButtonLabel') }}
+            <el-button
+              link
+              type="primary"
+              v-permission="'perm.tenants.edit'"
+              size="default"
+              :disabled="row.initialized === true"
+              @click="handleInitializeTenant(row)"
+            >
+              {{ t('TenantInitializeButtonLabel') }}
             </el-button>
             <el-button link type="primary" v-permission="'perm.tenants.delete'" size="default" @click="handleDelete(row.id)">{{ permLabelName('perm.tenants.delete', 'DeleteLabel') }}</el-button>
           </div>
@@ -56,8 +63,8 @@
     <TenantCreateDialog :visible="createDialogVisible" :onSubmit="handleCreateSubmit" :onCancel="handleCreateCancel" />
     <TenantEditDialog v-if="editRow && editRow.id" :visible="editDialogVisible" :row="editRow"
       :onSubmit="handleEditSubmit" :onCancel="handleEditCancel" />
-    <TenantAdminCreateDialog :visible="tenantAdminDialogVisible" :tenantId="selectedTenantId"
-      :onSubmit="handleCreateTenantAdminSubmit" :onCancel="handleCreateTenantAdminCancel" />
+    <TenantInitializeDialog :visible="tenantInitDialogVisible" :tenantId="selectedTenantId"
+      :onSubmit="handleInitializeTenantSubmit" :onCancel="handleInitializeTenantCancel" />
   </el-card>
 </template>
 
@@ -71,7 +78,7 @@ import TenantSearchForm from '@/views/tenants/TenantSearchForm.vue'
 import TenantDetailDialog from '@/views/tenants/TenantDetailDialog.vue'
 import TenantCreateDialog from '@/views/tenants/TenantCreateDialog.vue'
 import TenantEditDialog from '@/views/tenants/TenantEditDialog.vue'
-import TenantAdminCreateDialog from '@/views/tenants/TenantAdminCreateDialog.vue'
+import TenantInitializeDialog from '@/views/tenants/TenantInitializeDialog.vue'
 import { permLabelName } from '@/utils/menuPermLabelNames'
 
 const { t } = useI18n()
@@ -84,7 +91,7 @@ const tableData = ref([])
 const detailDialogVisible = ref(false)
 const createDialogVisible = ref(false)
 const editDialogVisible = ref(false)
-const tenantAdminDialogVisible = ref(false)
+const tenantInitDialogVisible = ref(false)
 const detailRow = ref({})
 const editRow = ref({})
 const selectedTenantId = ref(null)
@@ -172,18 +179,22 @@ const handleEditCancel = () => {
   editDialogVisible.value = false
 }
 
-const handleCreateTenantAdmin = (row) => {
+const handleInitializeTenant = (row) => {
+  if (row?.initialized === true) {
+    return
+  }
   selectedTenantId.value = row?.id || null
-  tenantAdminDialogVisible.value = true
+  tenantInitDialogVisible.value = true
 }
 
-const handleCreateTenantAdminSubmit = () => {
-  tenantAdminDialogVisible.value = false
+const handleInitializeTenantSubmit = () => {
+  tenantInitDialogVisible.value = false
   selectedTenantId.value = null
+  handleRefresh()
 }
 
-const handleCreateTenantAdminCancel = () => {
-  tenantAdminDialogVisible.value = false
+const handleInitializeTenantCancel = () => {
+  tenantInitDialogVisible.value = false
   selectedTenantId.value = null
 }
 

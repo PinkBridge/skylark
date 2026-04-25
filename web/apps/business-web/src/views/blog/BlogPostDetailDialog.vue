@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :model-value="visible" title="Blog Post" align-center destroy-on-close :show-close="false" style="max-width: 820px">
+  <el-dialog :model-value="visible" @update:model-value="(v) => { if (!v) props.onClose?.() }" @close="() => props.onClose?.()" title="Blog Post" align-center destroy-on-close :show-close="false" style="max-width: 820px">
     <div v-loading="loading">
       <div class="title">{{ post?.title || '-' }}</div>
       <div class="meta">

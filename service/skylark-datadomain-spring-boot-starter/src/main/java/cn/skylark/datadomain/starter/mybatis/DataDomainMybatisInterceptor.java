@@ -65,6 +65,7 @@ public class DataDomainMybatisInterceptor implements Interceptor {
     if (tenantId == null) {
       return invocation.proceed();
     }
+    final boolean allPlatform = DataDomainContext.isAllPlatformDataScope();
     List<String> tenantTables = props.getTenantTables();
     if (tenantTables == null || tenantTables.isEmpty()) {
       return invocation.proceed();
@@ -79,7 +80,7 @@ public class DataDomainMybatisInterceptor implements Interceptor {
       return invocation.proceed();
     }
 
-    if (DataDomainContext.isAllPlatformDataScope()) {
+    if (allPlatform) {
       try {
         Statement st0 = CCJSqlParserUtil.parse(originalSql);
         if (st0 instanceof Select && isPlainSelectSingleListedTableOnly((Select) st0, allPlatformSkipTables())) {
@@ -95,13 +96,13 @@ public class DataDomainMybatisInterceptor implements Interceptor {
       String modifiedSql = originalSql;
 
       if (statement instanceof Select) {
-        modifiedSql = processSelect((Select) statement, tenantId);
+        modifiedSql = processSelect((Select) statement, tenantId, allPlatform);
       } else if (statement instanceof Insert) {
-        modifiedSql = processInsert((Insert) statement, tenantId, originalSql);
+        modifiedSql = processInsert((Insert) statement, tenantId, originalSql, allPlatform);
       } else if (statement instanceof Update) {
-        modifiedSql = processUpdate((Update) statement, tenantId, originalSql);
+        modifiedSql = processUpdate((Update) statement, tenantId, originalSql, allPlatform);
       } else if (statement instanceof Delete) {
-        modifiedSql = processDelete((Delete) statement, tenantId, originalSql);
+        modifiedSql = processDelete((Delete) statement, tenantId, originalSql, allPlatform);
       }
 
       if (!originalSql.equals(modifiedSql)) {
@@ -212,20 +213,49 @@ public class DataDomainMybatisInterceptor implements Interceptor {
     return hasOrgs || self;
   }
 
-  private RowScopeTableRule findRule(String normalizedTableName) {
+  /**
+   * Explicit YAML rule wins; else when {@link SkylarkDataDomainProperties#isDefaultRowScope()} and table not excluded,
+   * synthesize org + self-username columns from global properties.
+   */
+  private RowScopeTableRule resolveEffectiveRowScopeRule(String normalizedTableName) {
     List<RowScopeTableRule> rules = props.getRowScopeRules();
-    if (rules == null) {
+    if (rules != null) {
+      for (RowScopeTableRule r : rules) {
+        if (r == null || !StringUtils.hasText(r.getTable())) {
+          continue;
+        }
+        if (r.getTable().trim().toLowerCase(Locale.ROOT).equals(normalizedTableName)) {
+          return r;
+        }
+      }
+    }
+    if (!props.isDefaultRowScope()) {
       return null;
     }
-    for (RowScopeTableRule r : rules) {
-      if (r == null || !StringUtils.hasText(r.getTable())) {
-        continue;
-      }
-      if (r.getTable().trim().toLowerCase(Locale.ROOT).equals(normalizedTableName)) {
-        return r;
+    if (isRowScopeExcluded(normalizedTableName)) {
+      return null;
+    }
+    RowScopeTableRule def = new RowScopeTableRule();
+    if (StringUtils.hasText(props.getOrgIdColumn())) {
+      def.setOrgIdColumn(props.getOrgIdColumn());
+    }
+    if (StringUtils.hasText(props.getCreateUserColumn())) {
+      def.setSelfUsernameColumn(props.getCreateUserColumn());
+    }
+    return def;
+  }
+
+  private boolean isRowScopeExcluded(String normalizedTableName) {
+    List<String> list = props.getRowScopeExcludeTables();
+    if (list == null) {
+      return false;
+    }
+    for (String t : list) {
+      if (StringUtils.hasText(t) && normalizedTableName.equals(t.trim().toLowerCase(Locale.ROOT))) {
+        return true;
       }
     }
-    return null;
+    return false;
   }
 
   private void appendRowDataScopeWhere(PlainSelect plainSelect, Table table) {
@@ -261,7 +291,7 @@ public class DataDomainMybatisInterceptor implements Interceptor {
   }
 
   private Expression buildRowDataScopeExpression(Table table, String normalizedName) {
-    RowScopeTableRule rule = findRule(normalizedName);
+    RowScopeTableRule rule = resolveEffectiveRowScopeRule(normalizedName);
     if (rule == null) {
       return null;
     }
@@ -278,11 +308,22 @@ public class DataDomainMybatisInterceptor implements Interceptor {
         parts.add(newInExpression(table, rule.getOrgIdColumn(), orgIds));
       }
     }
-    if (selfOnly && uid != null && StringUtils.hasText(rule.getSelfUserIdColumn())) {
-      EqualsTo eq = new EqualsTo();
-      eq.setLeftExpression(new Column(table, rule.getSelfUserIdColumn()));
-      eq.setRightExpression(new LongValue(uid));
-      parts.add(eq);
+    if (selfOnly) {
+      if (StringUtils.hasText(rule.getSelfUsernameColumn())) {
+        String uname = currentUsername();
+        if (StringUtils.hasText(uname)) {
+          EqualsTo eq = new EqualsTo();
+          eq.setLeftExpression(new Column(table, rule.getSelfUsernameColumn()));
+          eq.setRightExpression(new StringValue(uname));
+          parts.add(eq);
+        }
+      }
+      if (uid != null && StringUtils.hasText(rule.getSelfUserIdColumn())) {
+        EqualsTo eq = new EqualsTo();
+        eq.setLeftExpression(new Column(table, rule.getSelfUserIdColumn()));
+        eq.setRightExpression(new LongValue(uid));
+        parts.add(eq);
+      }
     }
     if (parts.isEmpty()) {
       return null;
@@ -310,7 +351,7 @@ public class DataDomainMybatisInterceptor implements Interceptor {
     return new InExpression(new Column(table, column), new ExpressionList(exprs));
   }
 
-  private String processSelect(Select select, Long tenantId) {
+  private String processSelect(Select select, Long tenantId, boolean allPlatform) {
     String tenantCol = props.getTenantIdColumn();
     if (!(select.getSelectBody() instanceof PlainSelect)) {
       return select.toString();
@@ -322,17 +363,19 @@ public class DataDomainMybatisInterceptor implements Interceptor {
     }
     Table table = (Table) fromItem;
     if (isTenantTable(table.getName())) {
-      boolean alreadyHasTenantInWhere = plainSelect.getWhere() != null
-          && plainSelect.getWhere().toString().contains(tenantCol);
-      if (!alreadyHasTenantInWhere) {
-        net.sf.jsqlparser.expression.operators.relational.EqualsTo tenantCondition =
-            new net.sf.jsqlparser.expression.operators.relational.EqualsTo();
-        tenantCondition.setLeftExpression(new Column(table, tenantCol));
-        tenantCondition.setRightExpression(new LongValue(tenantId));
-        if (plainSelect.getWhere() != null) {
-          plainSelect.setWhere(new AndExpression(plainSelect.getWhere(), tenantCondition));
-        } else {
-          plainSelect.setWhere(tenantCondition);
+      if (!allPlatform) {
+        boolean alreadyHasTenantInWhere = plainSelect.getWhere() != null
+            && plainSelect.getWhere().toString().contains(tenantCol);
+        if (!alreadyHasTenantInWhere) {
+          net.sf.jsqlparser.expression.operators.relational.EqualsTo tenantCondition =
+              new net.sf.jsqlparser.expression.operators.relational.EqualsTo();
+          tenantCondition.setLeftExpression(new Column(table, tenantCol));
+          tenantCondition.setRightExpression(new LongValue(tenantId));
+          if (plainSelect.getWhere() != null) {
+            plainSelect.setWhere(new AndExpression(plainSelect.getWhere(), tenantCondition));
+          } else {
+            plainSelect.setWhere(tenantCondition);
+          }
         }
       }
     }
@@ -341,10 +384,17 @@ public class DataDomainMybatisInterceptor implements Interceptor {
     return select.toString();
   }
 
-  private String processInsert(Insert insert, Long tenantId, String originalSql) {
+  private String processInsert(Insert insert, Long tenantId, String originalSql, boolean allPlatform) {
     String tenantCol = props.getTenantIdColumn();
     Table table = insert.getTable();
     if (!isTenantTable(table.getName())) {
+      return insert.toString();
+    }
+    if (allPlatform) {
+      // All-platform: do not auto-append tenant_id, but still allow audit auto-fill.
+      if (props.isAutoFillAuditFields()) {
+        insert = applyAuditColumnsToInsert(insert);
+      }
       return insert.toString();
     }
     List<net.sf.jsqlparser.schema.Column> columns = insert.getColumns();
@@ -412,26 +462,28 @@ public class DataDomainMybatisInterceptor implements Interceptor {
     return -1;
   }
 
-  private String processUpdate(Update update, Long tenantId, String originalSql) {
+  private String processUpdate(Update update, Long tenantId, String originalSql, boolean allPlatform) {
     String tenantCol = props.getTenantIdColumn();
     Table table = update.getTable();
     if (!isTenantTable(table.getName())) {
       return update.toString();
     }
-    if (update.getWhere() != null) {
-      String whereStr = update.getWhere().toString();
-      if (whereStr.contains(tenantCol)) {
-        return originalSql;
+    if (!allPlatform) {
+      if (update.getWhere() != null) {
+        String whereStr = update.getWhere().toString();
+        if (whereStr.contains(tenantCol)) {
+          return originalSql;
+        }
       }
-    }
-    net.sf.jsqlparser.expression.operators.relational.EqualsTo tenantCondition =
-        new net.sf.jsqlparser.expression.operators.relational.EqualsTo();
-    tenantCondition.setLeftExpression(new Column(table, tenantCol));
-    tenantCondition.setRightExpression(new LongValue(tenantId));
-    if (update.getWhere() != null) {
-      update.setWhere(new AndExpression(update.getWhere(), tenantCondition));
-    } else {
-      update.setWhere(tenantCondition);
+      net.sf.jsqlparser.expression.operators.relational.EqualsTo tenantCondition =
+          new net.sf.jsqlparser.expression.operators.relational.EqualsTo();
+      tenantCondition.setLeftExpression(new Column(table, tenantCol));
+      tenantCondition.setRightExpression(new LongValue(tenantId));
+      if (update.getWhere() != null) {
+        update.setWhere(new AndExpression(update.getWhere(), tenantCondition));
+      } else {
+        update.setWhere(tenantCondition);
+      }
     }
     appendSoftDeleteMutationWhereIfNeeded(table, update::getWhere, update::setWhere);
     appendRowDataScopeMutation(table, update::getWhere, update::setWhere);
@@ -579,26 +631,28 @@ public class DataDomainMybatisInterceptor implements Interceptor {
     return auth.getName();
   }
 
-  private String processDelete(Delete delete, Long tenantId, String originalSql) {
+  private String processDelete(Delete delete, Long tenantId, String originalSql, boolean allPlatform) {
     String tenantCol = props.getTenantIdColumn();
     Table table = delete.getTable();
     if (!isTenantTable(table.getName())) {
       return delete.toString();
     }
-    if (delete.getWhere() != null) {
-      String whereStr = delete.getWhere().toString();
-      if (whereStr.contains(tenantCol)) {
-        return originalSql;
+    if (!allPlatform) {
+      if (delete.getWhere() != null) {
+        String whereStr = delete.getWhere().toString();
+        if (whereStr.contains(tenantCol)) {
+          return originalSql;
+        }
       }
-    }
-    net.sf.jsqlparser.expression.operators.relational.EqualsTo tenantCondition =
-        new net.sf.jsqlparser.expression.operators.relational.EqualsTo();
-    tenantCondition.setLeftExpression(new Column(table, tenantCol));
-    tenantCondition.setRightExpression(new LongValue(tenantId));
-    if (delete.getWhere() != null) {
-      delete.setWhere(new AndExpression(delete.getWhere(), tenantCondition));
-    } else {
-      delete.setWhere(tenantCondition);
+      net.sf.jsqlparser.expression.operators.relational.EqualsTo tenantCondition =
+          new net.sf.jsqlparser.expression.operators.relational.EqualsTo();
+      tenantCondition.setLeftExpression(new Column(table, tenantCol));
+      tenantCondition.setRightExpression(new LongValue(tenantId));
+      if (delete.getWhere() != null) {
+        delete.setWhere(new AndExpression(delete.getWhere(), tenantCondition));
+      } else {
+        delete.setWhere(tenantCondition);
+      }
     }
     appendSoftDeleteMutationWhereIfNeeded(table, delete::getWhere, delete::setWhere);
     appendRowDataScopeMutation(table, delete::getWhere, delete::setWhere);

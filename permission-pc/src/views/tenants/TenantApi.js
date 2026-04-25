@@ -18,6 +18,13 @@ export function getTenantById(id) {
 }
 
 /**
+ * Get tenant initialization info (default org + default user)
+ */
+export function getTenantInitInfo(tenantId) {
+  return http.get(`${TENANT_PREFIX}/${tenantId}/init-info`)
+}
+
+/**
  * Get current user's tenant
  */
 export function getMyTenant() {
@@ -57,6 +64,13 @@ export function createTenant(tenant) {
  */
 export function createTenantAdmin(tenantId, payload) {
   return http.post(`${TENANT_PREFIX}/${tenantId}/admin`, payload)
+}
+
+/**
+ * Initialize tenant (create default org + default user)
+ */
+export function initializeTenant(tenantId, payload) {
+  return http.post(`${TENANT_PREFIX}/${tenantId}/initialize`, payload)
 }
 
 /**

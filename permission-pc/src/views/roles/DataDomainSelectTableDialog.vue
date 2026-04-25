@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :model-value="visible" :title="t('SelectTitle')" align-center destroy-on-close :show-close="false"
+  <el-dialog :model-value="visible" @update:model-value="(v) => { if (!v) onCancel() }" @close="onCancel" :title="t('SelectTitle')" align-center destroy-on-close :show-close="false"
     :modal="false" modal-penetrable width="80%">
     <DataDomainSearchForm :search="handleSearch" :reset="handleReset" />
     <el-table ref="tableRef" row-key="id" :data="tableData" style="width: 100%" stripe border

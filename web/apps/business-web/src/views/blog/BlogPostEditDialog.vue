@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :model-value="visible" title="Edit" align-center destroy-on-close :show-close="false" style="max-width: 820px">
+  <el-dialog :model-value="visible" @update:model-value="(v) => { if (!v) onCancel() }" @close="onCancel" title="Edit" align-center destroy-on-close :show-close="false" style="max-width: 820px">
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top" v-loading="loading || saving">
       <el-form-item label="Title" prop="title">
         <el-input v-model="form.title" maxlength="200" show-word-limit />

@@ -4,9 +4,14 @@ import cn.skylark.permission.authorization.dto.TenantPageRequest;
 import cn.skylark.permission.authorization.dto.TenantResponseDTO;
 import cn.skylark.permission.authorization.dto.UpdateTenantDTO;
 import cn.skylark.permission.authorization.dto.CreateUserDTO;
+import cn.skylark.permission.authorization.dto.TenantInitializeRequestDTO;
+import cn.skylark.permission.authorization.dto.TenantInitInfoDTO;
 import cn.skylark.permission.authorization.entity.OauthClientDetails;
+import cn.skylark.permission.authorization.entity.SysOrganization;
 import cn.skylark.permission.authorization.entity.SysRole;
 import cn.skylark.permission.authorization.entity.SysTenant;
+import cn.skylark.permission.authorization.entity.SysTenantAdminBinding;
+import cn.skylark.permission.authorization.entity.SysUser;
 import cn.skylark.permission.authorization.context.TenantContext;
 import cn.skylark.permission.authorization.mapper.ApiMapper;
 import cn.skylark.permission.authorization.mapper.OauthClientMapper;
@@ -74,6 +79,9 @@ public class TenantService {
 
   @Resource
   private TenantAdminBindingMapper tenantAdminBindingMapper;
+
+  @Resource
+  private OrganizationService organizationService;
 
   @Resource
   private PlatformConfigService platformConfigService;
@@ -499,6 +507,129 @@ public class TenantService {
     }
     TenantResponseDTO dto = new TenantResponseDTO();
     BeanUtils.copyProperties(tenant, dto);
+    if (tenant.getId() != null) {
+      dto.setInitialized(tenantAdminBindingMapper.selectByTenantId(tenant.getId()) != null);
+    }
+    return dto;
+  }
+
+  /**
+   * Initialize a tenant by creating a default organization and a default admin user, then binding them together.
+   * If tenant is already initialized (has sys_tenant_admin_binding), this will fail.
+   */
+  @Transactional(rollbackFor = Exception.class)
+  public Long initializeTenant(Long tenantId, TenantInitializeRequestDTO body) {
+    if (tenantId == null) {
+      throw new IllegalArgumentException("tenant.not.found");
+    }
+    SysTenant tenant = tenantMapper.selectById(tenantId);
+    if (tenant == null) {
+      throw new IllegalArgumentException("tenant.not.found");
+    }
+    if (tenantAdminBindingMapper.selectByTenantId(tenantId) != null) {
+      throw new IllegalArgumentException("tenant.already.initialized");
+    }
+
+    TenantInitializeRequestDTO.OrgInfo org = body == null ? null : body.getOrg();
+    TenantInitializeRequestDTO.UserInfo user = body == null ? null : body.getUser();
+    if (org == null || !StringUtils.hasText(org.getName())) {
+      throw new IllegalArgumentException("tenant.init.org.name.required");
+    }
+    if (org == null || !StringUtils.hasText(org.getType())) {
+      throw new IllegalArgumentException("tenant.init.org.type.required");
+    }
+    if (user == null || user.getRoleId() == null) {
+      throw new IllegalArgumentException("tenant.init.user.role.required");
+    }
+    if (user == null || !StringUtils.hasText(user.getUsername())) {
+      throw new IllegalArgumentException("tenant.init.user.username.required");
+    }
+    if (user == null || !StringUtils.hasText(user.getPassword())) {
+      throw new IllegalArgumentException("tenant.init.user.password.required");
+    }
+    if (userService.findByUsername(user.getUsername().trim()) != null) {
+      throw new IllegalArgumentException("tenant.init.user.username.duplicate");
+    }
+
+    // Validate role belongs to this tenant (or platform tenant 1).
+    SysRole role = roleMapper.selectById(user.getRoleId());
+    if (role == null) {
+      throw new IllegalArgumentException("role.not.found");
+    }
+    if (role.getTenantId() != null && !tenantId.equals(role.getTenantId()) && !Long.valueOf(1L).equals(role.getTenantId())) {
+      throw new IllegalArgumentException("role.tenant.mismatch");
+    }
+
+    // 1) Create default organization
+    SysOrganization organization = new SysOrganization();
+    organization.setTenantId(tenantId);
+    organization.setName(org.getName().trim());
+    organization.setType(org.getType().trim().toUpperCase());
+    organization.setStatus("ACTIVE");
+    organization.setLevel(1);
+    organization.setSort(1);
+    organizationService.create(organization);
+    if (organization.getId() == null) {
+      throw new IllegalStateException("tenant.init.org.create.failed");
+    }
+
+    // 2) Create default user and bind role
+    CreateUserDTO createUserDTO = new CreateUserDTO();
+    createUserDTO.setUsername(user.getUsername().trim());
+    createUserDTO.setPassword(user.getPassword());
+    createUserDTO.setEnabled(true);
+    createUserDTO.setStatus("ACTIVE");
+    createUserDTO.setTenantId(tenantId);
+    createUserDTO.setOrgId(organization.getId());
+    createUserDTO.setRoleIds(java.util.Collections.singletonList(user.getRoleId()));
+
+    Long userId = userService.createWithRoles(createUserDTO);
+    if (userId == null) {
+      throw new IllegalStateException("tenant.init.user.create.failed");
+    }
+    // Ensure tenant id is correct (cross-tenant admin op)
+    userService.updateTenantIdByUserId(userId, tenantId);
+    // Ensure binding exists for tenant ceiling role semantics
+    tenantAdminBindingMapper.upsert(tenantId, userId, user.getRoleId());
+    return userId;
+  }
+
+  /**
+   * Query tenant initialization info (default admin binding + org).
+   * Returns null when tenant has not been initialized.
+   */
+  public TenantInitInfoDTO initInfo(Long tenantId) {
+    if (tenantId == null) {
+      return null;
+    }
+    SysTenantAdminBinding binding = tenantAdminBindingMapper.selectByTenantId(tenantId);
+    if (binding == null || binding.getUserId() == null) {
+      return null;
+    }
+    SysUser user = userService.get(binding.getUserId());
+    SysRole role = binding.getRoleId() == null ? null : roleMapper.selectById(binding.getRoleId());
+    SysOrganization org = (user == null || user.getOrgId() == null) ? null : organizationService.get(user.getOrgId());
+
+    TenantInitInfoDTO dto = new TenantInitInfoDTO();
+    if (org != null) {
+      TenantInitInfoDTO.OrgInfo o = new TenantInitInfoDTO.OrgInfo();
+      o.setId(org.getId());
+      o.setName(org.getName());
+      o.setType(org.getType());
+      dto.setOrg(o);
+    }
+    if (user != null) {
+      TenantInitInfoDTO.UserInfo u = new TenantInitInfoDTO.UserInfo();
+      u.setId(user.getId());
+      u.setUsername(user.getUsername());
+      dto.setUser(u);
+    }
+    if (role != null) {
+      TenantInitInfoDTO.RoleInfo r = new TenantInitInfoDTO.RoleInfo();
+      r.setId(role.getId());
+      r.setName(role.getName());
+      dto.setRole(r);
+    }
     return dto;
   }
 }

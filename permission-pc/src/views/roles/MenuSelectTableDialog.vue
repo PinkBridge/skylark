@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :model-value="visible" :title="t('SelectTitle')" align-center destroy-on-close :show-close="false"
+  <el-dialog :model-value="visible" @update:model-value="(v) => { if (!v) onCancel() }" @close="onCancel" :title="t('SelectTitle')" align-center destroy-on-close :show-close="false"
     :modal="false" modal-penetrable width="80%">
     <div
       v-loading="!oauthClientsReady"
@@ -318,12 +318,16 @@ const setDefaultSelection = (menuIds) => {
   })
 }
 
-// Watch for dialog visibility changes
-watch(() => props.visible, (newVal) => {
-  if (newVal && props.row?.id) {
-    initData()
-  }
-})
+// 父组件先设 row 再设 visible=true 时，挂载瞬间 visible 已是 true，默认 watch 不会触发，需 immediate
+watch(
+  () => props.visible,
+  (newVal) => {
+    if (newVal && props.row?.id) {
+      initData()
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>

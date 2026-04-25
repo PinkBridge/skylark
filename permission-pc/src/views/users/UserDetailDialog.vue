@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :model-value="visible" :title="t('DetailTitle')" align-center
+  <el-dialog :model-value="visible" @update:model-value="(v) => { if (!v) onConfirm() }" @close="onConfirm" :title="t('DetailTitle')" align-center
     destroy-on-close :modal="false" modal-penetrable :show-close="false">
     <el-descriptions border>
       <el-descriptions-item :rowspan="2" :label="$t('UserPhotoLabel')">

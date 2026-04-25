@@ -87,6 +87,11 @@ public class TenantResponseDTO {
    * 更新时间
    */
   private LocalDateTime updateTime;
+
+  /**
+   * Whether this tenant has been initialized (has default org + default admin binding).
+   */
+  private Boolean initialized;
 }
 
 

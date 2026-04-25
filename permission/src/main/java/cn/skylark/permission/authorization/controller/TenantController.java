@@ -4,6 +4,8 @@ import cn.skylark.permission.authorization.dto.TenantPageRequest;
 import cn.skylark.permission.authorization.dto.TenantResponseDTO;
 import cn.skylark.permission.authorization.dto.UpdateTenantDTO;
 import cn.skylark.permission.authorization.dto.CreateTenantAdminDTO;
+import cn.skylark.permission.authorization.dto.TenantInitializeRequestDTO;
+import cn.skylark.permission.authorization.dto.TenantInitInfoDTO;
 import cn.skylark.permission.authorization.entity.SysTenant;
 import cn.skylark.permission.authorization.service.TenantService;
 import cn.skylark.permission.utils.PageResult;
@@ -168,6 +170,37 @@ public class TenantController {
     } catch (IllegalArgumentException e) {
       return Ret.fail(400, e.getMessage());
     }
+  }
+
+  /**
+   * 平台侧：初始化租户默认组织与默认登录用户（已初始化则拒绝）。
+   */
+  @PostMapping("/{id}/initialize")
+  public Ret<Long> initializeTenant(@PathVariable Long id, @RequestBody TenantInitializeRequestDTO body) {
+    TenantResponseDTO tenantDTO = tenantService.getDTO(id);
+    if (tenantDTO == null) {
+      return Ret.fail(404, "tenant.not.found");
+    }
+    try {
+      Long userId = tenantService.initializeTenant(id, body);
+      return Ret.data(userId);
+    } catch (IllegalArgumentException e) {
+      return Ret.fail(400, e.getMessage());
+    } catch (IllegalStateException e) {
+      return Ret.fail(500, e.getMessage());
+    }
+  }
+
+  /**
+   * 平台侧：查询租户初始化信息（默认组织 + 默认用户 + 角色）。
+   */
+  @GetMapping("/{id}/init-info")
+  public Ret<TenantInitInfoDTO> initInfo(@PathVariable Long id) {
+    TenantResponseDTO tenantDTO = tenantService.getDTO(id);
+    if (tenantDTO == null) {
+      return Ret.fail(404, "tenant.not.found");
+    }
+    return Ret.data(tenantService.initInfo(id));
   }
 
   /**

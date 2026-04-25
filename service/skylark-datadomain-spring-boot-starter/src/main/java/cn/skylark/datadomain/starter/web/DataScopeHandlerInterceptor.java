@@ -6,6 +6,7 @@ import cn.skylark.datadomain.starter.dto.ResolvedDataScopeDTO;
 import cn.skylark.datadomain.starter.resolve.DataScopeResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -21,6 +22,10 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class DataScopeHandlerInterceptor implements HandlerInterceptor {
 
+  private static final String CLAIM_DATA_SCOPE_ALL_PLATFORM = "data_scope_all_platform";
+  private static final String CLAIM_DATA_SCOPE_WHOLE_TENANT = "data_scope_whole_tenant";
+  private static final String CLAIM_DATA_SCOPE_SELF_ONLY = "data_scope_self_only";
+
   private final SkylarkDataDomainProperties props;
   private final DataScopeResolver resolver;
 
@@ -31,6 +36,17 @@ public class DataScopeHandlerInterceptor implements HandlerInterceptor {
     }
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     if (auth == null || !auth.isAuthenticated()) {
+      return true;
+    }
+
+    // Super admin: see all data (skip tenant isolation + org/self row scope).
+    if (hasAuthority(auth, "ROLE_SUPER_ADMIN")) {
+      DataDomainContext.setAllPlatformDataScope(true);
+      DataDomainContext.setDataScopeWholeTenant(false);
+      DataDomainContext.setDataScopeSelfOnly(false);
+      DataDomainContext.setDataScopeOrgIds(null);
+      // keep tenant/org/user id population for audit auto-fill if present
+      applyClaimsFromAuthentication(auth);
       return true;
     }
 
@@ -72,6 +88,26 @@ public class DataScopeHandlerInterceptor implements HandlerInterceptor {
       Long uid = asLong(m.get("user_id"));
       if (uid != null) {
         DataDomainContext.setDataScopeUserId(uid);
+      }
+    }
+
+    // data-scope flags from JWT (permission service). Remote resolve-data-scope may overwrite later.
+    if (!DataDomainContext.isAllPlatformDataScope()) {
+      Boolean b = asBoolean(m.get(CLAIM_DATA_SCOPE_ALL_PLATFORM));
+      if (Boolean.TRUE.equals(b)) {
+        DataDomainContext.setAllPlatformDataScope(true);
+      }
+    }
+    if (!DataDomainContext.isDataScopeWholeTenant()) {
+      Boolean b = asBoolean(m.get(CLAIM_DATA_SCOPE_WHOLE_TENANT));
+      if (Boolean.TRUE.equals(b)) {
+        DataDomainContext.setDataScopeWholeTenant(true);
+      }
+    }
+    if (!DataDomainContext.isDataScopeSelfOnly()) {
+      Boolean b = asBoolean(m.get(CLAIM_DATA_SCOPE_SELF_ONLY));
+      if (Boolean.TRUE.equals(b)) {
+        DataDomainContext.setDataScopeSelfOnly(true);
       }
     }
     // org_ids claim -> row scope orgIds (if not already resolved)
@@ -126,5 +162,45 @@ public class DataScopeHandlerInterceptor implements HandlerInterceptor {
       return java.util.Collections.singletonList(one);
     }
     return null;
+  }
+
+  private static Boolean asBoolean(Object v) {
+    if (v == null) {
+      return null;
+    }
+    if (v instanceof Boolean) {
+      return (Boolean) v;
+    }
+    if (v instanceof Number) {
+      return ((Number) v).intValue() != 0;
+    }
+    if (v instanceof String) {
+      String s = ((String) v).trim();
+      if (!StringUtils.hasText(s)) {
+        return null;
+      }
+      if ("true".equalsIgnoreCase(s) || "1".equals(s) || "yes".equalsIgnoreCase(s)) {
+        return true;
+      }
+      if ("false".equalsIgnoreCase(s) || "0".equals(s) || "no".equalsIgnoreCase(s)) {
+        return false;
+      }
+    }
+    return null;
+  }
+
+  private static boolean hasAuthority(Authentication auth, String authority) {
+    if (auth == null || !StringUtils.hasText(authority)) {
+      return false;
+    }
+    if (auth.getAuthorities() == null) {
+      return false;
+    }
+    for (GrantedAuthority ga : auth.getAuthorities()) {
+      if (ga != null && authority.equals(String.valueOf(ga.getAuthority()))) {
+        return true;
+      }
+    }
+    return false;
   }
 }

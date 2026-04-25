@@ -33,6 +33,10 @@ public class CustomClaimsTokenEnhancer implements TokenEnhancer {
   public static final String CLAIM_ORG_ID = "org_id";
   public static final String CLAIM_USER_ID = "user_id";
   public static final String CLAIM_ORG_IDS = "org_ids";
+  /** Data-scope flags for downstream services when remote resolve-data-scope is disabled. */
+  public static final String CLAIM_DATA_SCOPE_ALL_PLATFORM = "data_scope_all_platform";
+  public static final String CLAIM_DATA_SCOPE_WHOLE_TENANT = "data_scope_whole_tenant";
+  public static final String CLAIM_DATA_SCOPE_SELF_ONLY = "data_scope_self_only";
 
   private final UserService userService;
   private final DataDomainResolutionService dataDomainResolutionService;
@@ -70,6 +74,11 @@ public class CustomClaimsTokenEnhancer implements TokenEnhancer {
     }
     if (scope != null && scope.getOrgIds() != null) {
       info.put(CLAIM_ORG_IDS, scope.getOrgIds());
+    }
+    if (scope != null) {
+      info.put(CLAIM_DATA_SCOPE_ALL_PLATFORM, scope.isAllPlatform());
+      info.put(CLAIM_DATA_SCOPE_WHOLE_TENANT, scope.isWholeTenant());
+      info.put(CLAIM_DATA_SCOPE_SELF_ONLY, scope.isSelfOnly());
     }
 
     // DefaultTokenServices may create DefaultOAuth2AccessToken with an unmodifiable additionalInformation map.

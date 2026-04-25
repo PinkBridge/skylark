@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :model-value="visible" :title="t('DetailTitle')" align-center destroy-on-close :modal="false"
+  <el-dialog :model-value="visible" @update:model-value="(v) => { if (!v) onConfirm() }" @close="onConfirm" :title="t('DetailTitle')" align-center destroy-on-close :modal="false"
     modal-penetrable :show-close="false">
     <el-descriptions border>
       <el-descriptions-item :label="t('LogoLabel')">
@@ -21,6 +21,34 @@
       <el-descriptions-item :label="t('UpdatedAtLabel')">{{ tenantInfo.updateTime }}</el-descriptions-item>
       <el-descriptions-item :label="t('AddressLabel')" :span="2">{{ tenantInfo.address || '-' }}</el-descriptions-item>
     </el-descriptions>
+
+    <el-divider content-position="left">{{ t('TenantInitInfoTitle') }}</el-divider>
+    <el-descriptions border>
+      <el-descriptions-item :label="t('InitializedLabel')">
+        <el-tag :type="tenantInfo.initialized ? 'success' : 'info'">
+          {{ tenantInfo.initialized ? t('Yes') : t('No') }}
+        </el-tag>
+      </el-descriptions-item>
+      <el-descriptions-item :label="t('OrganizationLabel')">
+        {{ initInfo?.org?.name ? `${initInfo.org.name} (${initInfo.org.type || '-'})` : '-' }}
+      </el-descriptions-item>
+      <el-descriptions-item :label="t('UsernameLabel')">
+        {{ initInfo?.user?.username || '-' }}
+      </el-descriptions-item>
+      <el-descriptions-item :label="t('RoleLabel')">
+        {{ initInfo?.role?.name || '-' }}
+      </el-descriptions-item>
+      <el-descriptions-item :label="t('PasswordLabel')">
+        <el-button
+          type="primary"
+          link
+          :disabled="!initInfo?.user?.id"
+          @click="handleResetDefaultUserPassword"
+        >
+          {{ t('AdminResetPasswordLabel') }}
+        </el-button>
+      </el-descriptions-item>
+    </el-descriptions>
     <template #footer>
       <div class="dialog-footer">
         <el-button type="primary" @click="onConfirm">{{ t('ConfirmButtonText') }}</el-button>
@@ -32,14 +60,16 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getTenantById } from '@/views/tenants/TenantApi'
-import { ElMessage } from 'element-plus'
+import { getTenantById, getTenantInitInfo } from '@/views/tenants/TenantApi'
+import { adminResetUserPassword } from '@/views/users/UserApi'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const { t } = useI18n()
 
 const props = defineProps(['visible', 'row', 'onConfirm'])
 
 const tenantInfo = ref({})
+const initInfo = ref(null)
 
 const fetchTenantData = () => {
   if (props.row && props.row.id) {
@@ -49,7 +79,35 @@ const fetchTenantData = () => {
       console.error('Failed to get tenant information:', error)
       ElMessage.error(error.message || 'Failed to get tenant information')
     })
+    getTenantInitInfo(props.row.id).then((res) => {
+      initInfo.value = res || null
+    }).catch(() => {
+      initInfo.value = null
+    })
   }
+}
+
+const handleResetDefaultUserPassword = () => {
+  const userId = initInfo.value?.user?.id
+  if (!userId) return
+  ElMessageBox.prompt(t('AdminResetPasswordPrompt'), t('AdminResetPasswordTitle'), {
+    confirmButtonText: t('ConfirmButtonText'),
+    cancelButtonText: t('CancelButtonText'),
+    inputType: 'password',
+    inputPlaceholder: t('NewPasswordPlaceholder'),
+    inputPattern: /^.{6,20}$/,
+    inputErrorMessage: t('PasswordLengthError'),
+  })
+    .then(({ value }) => adminResetUserPassword(userId, value))
+    .then(() => {
+      ElMessage.success(t('AdminResetPasswordSuccess'))
+    })
+    .catch((err) => {
+      // cancel => ignore
+      if (err && err.message) {
+        ElMessage.error(err.message)
+      }
+    })
 }
 
 const onConfirm = () => {

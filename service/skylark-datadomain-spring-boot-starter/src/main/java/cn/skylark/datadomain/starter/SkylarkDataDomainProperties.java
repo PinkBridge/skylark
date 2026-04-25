@@ -85,7 +85,25 @@ public class SkylarkDataDomainProperties {
    */
   private List<String> allPlatformSkipTenantSelectTables = new ArrayList<>();
 
-  /** Row-scope rules per logical table name (lowercase match). */
+  /**
+   * When true (default), any {@link #tenantTables} entry that is not in {@link #rowScopeExcludeTables}
+   * automatically gets row-level data scope using {@link #orgIdColumn} and {@link #createUserColumn}
+   * (as login name for {@code selfOnly}), unless overridden by {@link #rowScopeRules}.
+   * <p>
+   * Tables without those columns must be listed in {@link #rowScopeExcludeTables} or they may get invalid SQL.
+   */
+  private boolean defaultRowScope = true;
+
+  /**
+   * Tenant tables that skip row-scope rewriting (tenant_id / soft-delete still apply).
+   * Use when a table has no {@link #orgIdColumn} / {@link #createUserColumn} or must not be filtered.
+   */
+  private List<String> rowScopeExcludeTables = new ArrayList<>();
+
+  /**
+   * Optional per-table overrides (non-standard org column, {@code id IN (orgIds)}, numeric self column, etc.).
+   * When a table is listed here, this rule replaces the {@link #defaultRowScope} template for that table.
+   */
   private List<RowScopeTableRule> rowScopeRules = new ArrayList<>();
 
   /**
@@ -129,7 +147,16 @@ public class SkylarkDataDomainProperties {
     private boolean orgIdsOnPrimaryKey;
     /** If set, append {@code column IN (orgIds)}. Ignored if orgIdsOnPrimaryKey is true. */
     private String orgIdColumn;
-    /** When selfOnly, append {@code column = currentUserId}. */
+    /**
+     * When {@code selfOnly}, append {@code column = resolvedUserId} (numeric).
+     * Use for PK / {@code user_id} style columns; not for {@code create_user} varchar.
+     */
     private String selfUserIdColumn;
+    /**
+     * When {@code selfOnly}, append {@code column = currentUsername} (string, SQL-quoted).
+     * Use for audit columns like {@code create_user} that store the login name.
+     * If both this and {@link #selfUserIdColumn} are set, both predicates may apply (combined with OR).
+     */
+    private String selfUsernameColumn;
   }
 }

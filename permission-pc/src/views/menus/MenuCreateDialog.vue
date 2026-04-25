@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :model-value="visible" :title="t('CreateTitle')" align-center destroy-on-close :show-close="false"
+  <el-dialog :model-value="visible" @update:model-value="(v) => { if (!v) onCancel() }" @close="onCancel" :title="t('CreateTitle')" align-center destroy-on-close :show-close="false"
     style="max-width: 600px" :modal="false" modal-penetrable>
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
       <el-form-item :label="t('NameLabel')" prop="name">
