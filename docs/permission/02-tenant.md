@@ -4,7 +4,7 @@ English | [简体中文](02-tenant.zh-CN.md)
 
 ### Goal
 
-Create a tenant and assign a tenant admin.
+Create a tenant and set up a tenant admin so the tenant can independently manage users/roles and grants.
 
 ### Concepts
 
@@ -36,10 +36,10 @@ Create a tenant and assign a tenant admin.
 - Create a role for the tenant (suggest clear names such as `TENANT_ADMIN`, `TENANT_OPERATOR`, `TENANT_READONLY`).
 - Grant **menu permissions**, **API permissions** (see `04-role-menu-api.md`), and **data domains** as needed.
 
-4. **Create a tenant admin**
+4. **Create the default tenant organization and admin**
 
-- Click the action button on the newly created tenant row to create a tenant admin.
-- Select the newly created tenant role and set the admin **username** and **password**.
+- Click **Initialize** in the actions column of the newly created tenant.
+- Fill in the default **organization** and default **user** information, and select the role you just created.
 
 5. **Visit the new tenant domain**
 
