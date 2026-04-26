@@ -390,13 +390,6 @@ public class DataDomainMybatisInterceptor implements Interceptor {
     if (!isTenantTable(table.getName())) {
       return insert.toString();
     }
-    if (allPlatform) {
-      // All-platform: do not auto-append tenant_id, but still allow audit auto-fill.
-      if (props.isAutoFillAuditFields()) {
-        insert = applyAuditColumnsToInsert(insert);
-      }
-      return insert.toString();
-    }
     List<net.sf.jsqlparser.schema.Column> columns = insert.getColumns();
     boolean hasTenantId = false;
     if (columns != null) {
