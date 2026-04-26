@@ -12,6 +12,9 @@
     <div class="header-blank"></div>
     <div class="header-tools">
       <div class="header-tools-item">
+        <AppSwitchSelect />
+      </div>  
+      <div class="header-tools-item">
         <LanguageComponent />
       </div>  
       <div class="user-avatar header-tools-item">
@@ -25,12 +28,14 @@
 import { ref } from 'vue'
 import UserAvatarComponent from '@/components/UserAvatar.vue'
 import LanguageComponent from '@/components/LanguageSelect.vue'
+import AppSwitchSelect from '@/components/AppSwitchSelect.vue'
 import { getTenant } from '@/utils/tenant'
 export default {
   name: 'HeaderComponent',
   components: {
     UserAvatarComponent,
     LanguageComponent,
+    AppSwitchSelect,
   },
   setup() {
     const tenant = ref(null)

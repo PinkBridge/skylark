@@ -16,6 +16,9 @@
     <div class="header-blank" />
     <div class="header-tools">
       <div class="header-tools-item">
+        <ShellAppSwitch />
+      </div>
+      <div class="header-tools-item">
         <ShellLanguageSelect />
       </div>
       <div class="user-avatar header-tools-item">
@@ -28,6 +31,7 @@
 <script setup>
 import { ref, inject, onMounted } from 'vue'
 import { ADMIN_SHELL_CONFIG } from '../symbols'
+import ShellAppSwitch from './ShellAppSwitch.vue'
 import ShellLanguageSelect from './ShellLanguageSelect.vue'
 import ShellUserAvatar from './ShellUserAvatar.vue'
 
