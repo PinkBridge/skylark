@@ -30,13 +30,35 @@ import { ADMIN_SHELL_CONFIG } from '../symbols'
 const shell = inject(ADMIN_SHELL_CONFIG)
 
 const apps = ref([])
-const currentClientId = String(
+
+const envClientId = String(
   process.env.VUE_APP_CLIENT_ID || process.env.VUE_APP_MENU_APP || ''
 ).trim()
 
+function resolveCurrentClientId() {
+  // Prefer explicit env var (works in most builds).
+  if (envClientId && apps.value.some((a) => a && a.clientId === envClientId)) {
+    return envClientId
+  }
+
+  // Fallback: infer by current port (common when env is not set in image build args).
+  const portStr = String(window.location.port || '').trim()
+  const port = portStr ? Number(portStr) : 0
+  if (port > 0) {
+    const hit = apps.value.find((a) => a && typeof a.port === 'number' && a.port === port)
+    if (hit?.clientId) return hit.clientId
+  }
+
+  // Last resort: use env as-is (may be empty).
+  return envClientId
+}
+
+const currentClientId = computed(() => resolveCurrentClientId())
+
 const currentLabel = computed(() => {
-  const hit = apps.value.find((a) => a && a.clientId === currentClientId)
-  return hit?.name || currentClientId || 'Apps'
+  const cid = currentClientId.value
+  const hit = apps.value.find((a) => a && a.clientId === cid)
+  return hit?.name || cid || 'Apps'
 })
 
 function resolveApiBase() {
