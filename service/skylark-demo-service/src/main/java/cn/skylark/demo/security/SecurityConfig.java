@@ -2,6 +2,8 @@ package cn.skylark.demo.security;
 
 import cn.skylark.authz.starter.SkylarkAuthzProperties;
 import cn.skylark.authz.starter.web.JwtClaimsAuthenticationFilter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -11,6 +13,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@EnableConfigurationProperties(SkylarkAuthzProperties.class)
+@ConditionalOnProperty(prefix = "skylark.authz.jwt", name = "enabled", havingValue = "true")
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
   private final SkylarkAuthzProperties authzProperties;
