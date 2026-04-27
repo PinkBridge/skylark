@@ -1,0 +1,48 @@
+server:
+  port: 80
+
+spring:
+  application:
+    name: aiot-service
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# Starter defaults for a brand-new service:
+# - authz: disabled by default (otherwise it requires permissionBaseUrl + client credentials)
+# - datadomain: enabled, but resolve-data-scope disabled by default (no remote call)
+skylark:
+  authz:
+    enabled: true
+    # Default "works out of the box" settings for new services.
+    # - app-code: identifies this service in permission RBAC snapshots
+    # - permission-base-url: permission service base URL in docker compose
+    # - client-id/client-secret: service-to-permission client credentials (reuse seeded skylark-service)
+    app-code: skylark-demo-service
+    permission-base-url: http://permission
+    client-id: skylark-service
+    client-secret: 112233
+    sync-fixed-delay-ms: 30000
+    ignore-paths:
+      - /actuator/**
+      - /api/business-service/demo/**
+    jwt:
+      enabled: true
+      # Must match permission service oauth.signingKey
+      signing-key: 374SJADK&*@!SHSAshhsdevops(90)
+  datadomain:
+    enabled: true
+    tenant-header: X-Tenant-Id
+    resolve-data-scope: false
+    # If you turn resolve-data-scope on:
+    # permission-base-url: http://permission:8080
+    # client-id: demo-service
+    # client-secret: your-secret
+    # data-scope-resolve-path: /api/permission/internal/resolved-data-scope
+    # resolve-cache-ttl-ms: 60000
+    #
+    # MyBatis rewrite is opt-in: configure tenant-tables + row-scope-rules when you add MyBatis.
+

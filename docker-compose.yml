@@ -79,7 +79,6 @@ services:
       - permission_uploads:/app/uploads
 
 
-
   business-service:
     build:
       context: .
@@ -117,6 +116,34 @@ services:
     restart: unless-stopped
     ports:
       - "9531:80"
+    depends_on:
+      gateway:
+        condition: service_started
+
+
+
+  aiot-service:
+    build:
+      context: .
+      dockerfile: service/aiot-service/Dockerfile
+      args:
+        MAVEN_BUILD_IMAGE: ${MAVEN_BUILD_IMAGE:-maven:3.9-eclipse-temurin-17}
+        JRE_IMAGE: ${JRE_IMAGE:-eclipse-temurin:17-jre-alpine}
+    container_name: aiot-service
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+      - SERVER_PORT=80
+
+
+  aiot-web:
+    build:
+      context: .
+      dockerfile: web/apps/aiot-web/Dockerfile
+    container_name: aiot-web
+    restart: unless-stopped
+    ports:
+      - "9532:80"
     depends_on:
       gateway:
         condition: service_started

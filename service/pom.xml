@@ -24,6 +24,7 @@
     <module>skylark-web-common</module>
     <module>skylark-demo-service</module>
     <module>business-service</module>
+    <module>aiot-service</module>
   </modules>
 
   <properties>
