@@ -71,6 +71,33 @@ function Start-ComposeServiceIfPossible([string]$ServiceName) {
   }
 }
 
+function Ensure-WebWorkspaceLockfileUpdated() {
+  # Docker builds use `pnpm install --frozen-lockfile`.
+  # When scaffolding a new app (or deleting/re-creating it), `web/pnpm-lock.yaml` must be updated,
+  # otherwise the docker build fails with ERR_PNPM_OUTDATED_LOCKFILE.
+  try {
+    $null = Get-Command pnpm -ErrorAction Stop
+  } catch {
+    Write-Host "Skip lockfile update: pnpm not found. If docker build fails with frozen-lockfile, run:"
+    Write-Host "  pnpm -C `"$repoRoot\web`" install"
+    return
+  }
+
+  try {
+    Write-Host "Updating web workspace lockfile (pnpm install)..."
+    pnpm -C (Join-Path $repoRoot "web") install | Out-Host
+    if ($LASTEXITCODE -ne 0) {
+      Write-Host "Lockfile update failed (exit=$LASTEXITCODE). You can retry:"
+      Write-Host "  pnpm -C `"$repoRoot\web`" install"
+      return
+    }
+  } catch {
+    Write-Host "Lockfile update threw an error. You can retry:"
+    Write-Host "  pnpm -C `"$repoRoot\web`" install"
+    return
+  }
+}
+
 function Replace-InFile([string]$Path, [hashtable]$Replacements) {
   if (!(Test-Path $Path)) { return }
   $content = Get-Content -LiteralPath $Path -Raw
@@ -204,4 +231,5 @@ Write-Host "  pnpm -C `"$repoRoot\web`" install"
 Write-Host "  pnpm -C `"$repoRoot\web`" --filter $AppName run serve"
 
 # Best-effort: after scaffolding, auto-start this frontend service and show status.
+Ensure-WebWorkspaceLockfileUpdated
 Start-ComposeServiceIfPossible -ServiceName $AppName
