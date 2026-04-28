@@ -11,40 +11,26 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>skylark-demo-service</artifactId>
-  <name>skylark-demo-service</name>
-  <description>Demo business service template for Skylark</description>
+  <artifactId>skylark-web-exception-spring-boot-starter</artifactId>
+  <name>skylark-web-exception-spring-boot-starter</name>
+  <description>Skylark web global exception handler starter</description>
 
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-configuration-processor</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+    <!-- Provided by the host service -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-actuator</artifactId>
-    </dependency>
-
-    <!-- Keep Spring Security in template so authz/data-domain interceptors can read Authentication -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-security</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>cn.skylark</groupId>
-      <artifactId>skylark-authz-spring-boot-starter</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>cn.skylark</groupId>
-      <artifactId>skylark-web-exception-spring-boot-starter</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>cn.skylark</groupId>
-      <artifactId>skylark-datadomain-spring-boot-starter</artifactId>
-      <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -52,20 +38,10 @@
       <artifactId>lombok</artifactId>
       <optional>true</optional>
     </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -79,3 +55,4 @@
     </plugins>
   </build>
 </project>
+
