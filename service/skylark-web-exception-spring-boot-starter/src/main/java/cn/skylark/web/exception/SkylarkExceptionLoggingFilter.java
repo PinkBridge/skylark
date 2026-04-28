@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.FilterChain;
+import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -42,16 +43,27 @@ public class SkylarkExceptionLoggingFilter extends OncePerRequestFilter {
     try {
       filterChain.doFilter(request, response);
 
-      Throwable error = (Throwable) request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
-      if (error != null) {
-        if (props.isLogUncaughtStacktrace()) {
-          log.error("Error dispatch exception: {} {} -> {}", request.getMethod(), request.getRequestURI(), String.valueOf(error), error);
+      // If we are in ERROR dispatch, always log servlet error attributes.
+      if (request.getDispatcherType() == DispatcherType.ERROR) {
+        Object status = request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+        Object message = request.getAttribute(RequestDispatcher.ERROR_MESSAGE);
+        Object requestUri = request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI);
+        Object servletName = request.getAttribute(RequestDispatcher.ERROR_SERVLET_NAME);
+        Throwable error = (Throwable) request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
+        Object errorType = request.getAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE);
+
+        if (props.isLogUncaughtStacktrace() && error != null) {
+          log.error("Error dispatch: method={} uri={} status={} message={} errorType={} originalUri={} servlet={} exception={}",
+              request.getMethod(), request.getRequestURI(), status, message, errorType, requestUri, servletName, String.valueOf(error), error);
         } else {
-          log.error("Error dispatch exception: {} {} -> {}", request.getMethod(), request.getRequestURI(), String.valueOf(error));
+          log.error("Error dispatch: method={} uri={} status={} message={} errorType={} originalUri={} servlet={} exception={}",
+              request.getMethod(), request.getRequestURI(), status, message, errorType, requestUri, servletName, String.valueOf(error));
         }
-      } else if (response.getStatus() >= 500) {
+      } else {
         // In some flows container calls sendError(...) without an exception object.
-        log.error("Server error without exception object: {} {} -> status={}", request.getMethod(), request.getRequestURI(), response.getStatus());
+        if (response.getStatus() >= 500) {
+          log.error("Server error without exception object: {} {} -> status={}", request.getMethod(), request.getRequestURI(), response.getStatus());
+        }
       }
     } catch (Throwable t) {
       if (props.isLogUncaughtStacktrace()) {
