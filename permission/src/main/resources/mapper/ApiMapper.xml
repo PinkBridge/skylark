@@ -19,6 +19,30 @@
         WHERE id = #{id}
     </select>
 
+    <select id="selectActiveByMethodAndPath" resultMap="ApiResult">
+        SELECT *
+        FROM sys_api
+        WHERE method = #{method}
+          AND path = #{path}
+          AND is_delete = 0
+        LIMIT 1
+    </select>
+
+    <select id="selectDeletedByMethodAndPath" resultMap="ApiResult">
+        SELECT *
+        FROM sys_api
+        WHERE method = #{method}
+          AND path = #{path}
+          AND is_delete = 1
+        LIMIT 1
+    </select>
+
+    <update id="reactivateById">
+        UPDATE sys_api
+        SET is_delete = 0
+        WHERE id = #{id}
+    </update>
+
     <select id="selectAll" resultMap="ApiResult">
         SELECT *
         FROM sys_api
@@ -89,7 +113,7 @@
         </where>
     </select>
 
-    <insert id="insert" parameterType="cn.skylark.permission.authorization.entity.SysApi">
+    <insert id="insert" parameterType="cn.skylark.permission.authorization.entity.SysApi" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO sys_api(method, path, permlabel, module_key, app_code)
         VALUES (#{method}, #{path}, #{permlabel}, #{moduleKey}, #{appCode})
     </insert>

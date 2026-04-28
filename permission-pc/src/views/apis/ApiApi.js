@@ -52,3 +52,15 @@ export function createApi(api) {
   return http.post(`${API_PREFIX}`, api)
 }
 
+/**
+ * Import apis by JSON file (multipart)
+ */
+export function importApis(appCode, file, dryRun = false) {
+  const form = new FormData()
+  form.append('appCode', appCode)
+  form.append('file', file)
+  return http.post(`${API_PREFIX}:import?dryRun=${dryRun ? 'true' : 'false'}`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+

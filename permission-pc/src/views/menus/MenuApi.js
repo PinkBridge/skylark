@@ -52,3 +52,15 @@ export function createMenu(menu) {
   return http.post(`${MENU_PREFIX}`, menu)
 }
 
+/**
+ * Import menus by JSON file (multipart)
+ */
+export function importMenus(appCode, file, dryRun = false) {
+  const form = new FormData()
+  form.append('appCode', appCode)
+  form.append('file', file)
+  return http.post(`${MENU_PREFIX}:import?dryRun=${dryRun ? 'true' : 'false'}`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+

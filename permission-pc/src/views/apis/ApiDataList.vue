@@ -5,6 +5,9 @@
       <el-button type="primary" size="default" :icon="Plus" 
       v-permission="'system.apis.new'"
       @click="handleCreate">{{ permLabelName('system.apis.new', 'NewButtonLabel') }}</el-button>
+      <el-button type="success" size="default" :icon="Upload"
+      v-permission="'system.apis.import'"
+      @click="handleImport">{{ t('ImportButtonLabel') }}</el-button>
       <el-button type="default" size="default" :icon="Refresh" @click="handleRefresh">{{
         t('RefreshButtonLabel') }}</el-button>
     </div>
@@ -50,6 +53,15 @@
     <ApiCreateDialog :visible="createDialogVisible" :onSubmit="handleCreateSubmit" :onCancel="handleCreateCancel" />
     <ApiEditDialog v-if="editRow && editRow.id" :visible="editDialogVisible" :row="editRow"
       :onSubmit="handleEditSubmit" :onCancel="handleEditCancel" />
+    <JsonImportDialog
+      :visible="importDialogVisible"
+      :title="t('ImportDialogTitle')"
+      :apps="apps"
+      :appCode="selectedApp"
+      :importFn="importApis"
+      :onSuccess="handleImportSuccess"
+      :onCancel="handleImportCancel"
+    />
   </el-card>
 
 </template>
@@ -57,13 +69,15 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getApiPage, deleteApiById } from '@/views/apis/ApiApi'
-import { Refresh, Plus } from '@element-plus/icons-vue'
+import { getApiPage, deleteApiById, importApis } from '@/views/apis/ApiApi'
+import { getAppList } from '@/views/apps/AppApi'
+import { Refresh, Plus, Upload } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
 import ApiSearchForm from '@/views/apis/ApiSearchForm.vue'
 import ApiDetailDialog from '@/views/apis/ApiDetailDialog.vue'
 import ApiCreateDialog from '@/views/apis/ApiCreateDialog.vue'
 import ApiEditDialog from '@/views/apis/ApiEditDialog.vue'
+import JsonImportDialog from '@/components/JsonImportDialog.vue'
 import { permLabelName } from '@/utils/menuPermLabelNames'
 
 const { t } = useI18n()
@@ -78,6 +92,9 @@ const createDialogVisible = ref(false)
 const editDialogVisible = ref(false)
 const detailRow = ref({})
 const editRow = ref({})
+const apps = ref([])
+const selectedApp = ref('')
+const importDialogVisible = ref(false)
 
 // init data
 const initData = () => {
@@ -121,6 +138,19 @@ const handleSearch = (params) => {
 // new record
 const handleCreate = () => {
   createDialogVisible.value = true
+}
+
+const handleImport = () => {
+  importDialogVisible.value = true
+}
+
+const handleImportSuccess = () => {
+  importDialogVisible.value = false
+  handleRefresh()
+}
+
+const handleImportCancel = () => {
+  importDialogVisible.value = false
 }
 
 const handleCreateSubmit = () => {
@@ -201,6 +231,13 @@ const handleCurrentChange = (page) => {
 // mounted
 onMounted(() => {
   initData()
+  getAppList().then((list) => {
+    const rows = Array.isArray(list) ? list : []
+    apps.value = rows
+    selectedApp.value = rows?.[0]?.clientId || ''
+  }).catch((e) => {
+    console.error('Failed to load apps:', e)
+  })
 })
 </script>
 

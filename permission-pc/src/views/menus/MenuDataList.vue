@@ -11,6 +11,9 @@
       <el-button type="primary" size="default" :icon="Plus" 
       v-permission="'system.menus.new'"
       @click="handleCreate">{{ permLabelName('system.menus.new', 'NewButtonLabel') }}</el-button>
+      <el-button type="success" size="default" :icon="Upload"
+      v-permission="'system.menus.import'"
+      @click="handleImport">{{ t('ImportButtonLabel') }}</el-button>
       <el-button type="default" size="default" :icon="Refresh" @click="handleRefresh">{{
         t('RefreshButtonLabel') }}</el-button>
     </div>
@@ -73,21 +76,31 @@
       :onSubmit="handleEditSubmit"
       :onCancel="handleEditCancel"
     />
+    <JsonImportDialog
+      :visible="importDialogVisible"
+      :title="t('ImportDialogTitle')"
+      :apps="apps"
+      :appCode="selectedApp"
+      :importFn="importMenus"
+      :onSuccess="handleImportSuccess"
+      :onCancel="handleImportCancel"
+    />
   </el-card>
 </template>
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getMenuList, deleteMenuById } from '@/views/menus/MenuApi'
+import { getMenuList, deleteMenuById, importMenus } from '@/views/menus/MenuApi'
 import { getAppList } from '@/views/apps/AppApi'
-import { Refresh, Plus } from '@element-plus/icons-vue'
+import { Refresh, Plus, Upload } from '@element-plus/icons-vue'
 import * as Icons from '@element-plus/icons-vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import MenuSearchForm from '@/views/menus/MenuSearchForm.vue'
 import MenuDetailDialog from '@/views/menus/MenuDetailDialog.vue'
 import MenuCreateDialog from '@/views/menus/MenuCreateDialog.vue'
 import MenuEditDialog from '@/views/menus/MenuEditDialog.vue'
+import JsonImportDialog from '@/components/JsonImportDialog.vue'
 import { permLabelName } from '@/utils/menuPermLabelNames'
 
 const { t } = useI18n()
@@ -103,6 +116,8 @@ const editRow = ref({})
 const searchParams = ref({})
 const oauthClientIds = ref([])
 const selectedApp = ref('')
+const apps = ref([])
+const importDialogVisible = ref(false)
 
 const onAppFilterChange = (v) => {
   selectedApp.value = v || ''
@@ -176,6 +191,19 @@ const handleCreate = () => {
   createDialogVisible.value = true
 }
 
+const handleImport = () => {
+  importDialogVisible.value = true
+}
+
+const handleImportSuccess = () => {
+  importDialogVisible.value = false
+  handleRefresh()
+}
+
+const handleImportCancel = () => {
+  importDialogVisible.value = false
+}
+
 const handleCreateSubmit = () => {
   initData()
   createDialogVisible.value = false
@@ -236,6 +264,7 @@ onMounted(async () => {
   try {
     const list = await getAppList()
     const rows = Array.isArray(list) ? list : []
+    apps.value = rows
     oauthClientIds.value = rows
       .map((c) => c.clientId)
       .filter(Boolean)
