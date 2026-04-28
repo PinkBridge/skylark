@@ -480,10 +480,60 @@ public class DataDomainMybatisInterceptor implements Interceptor {
     }
     appendSoftDeleteMutationWhereIfNeeded(table, update::getWhere, update::setWhere);
     appendRowDataScopeMutation(table, update::getWhere, update::setWhere);
+    String sql = update.toString();
     if (props.isAutoFillAuditFields()) {
-      applyAuditColumnsToUpdate(update);
+      sql = appendAuditAssignmentsToUpdateSql(sql);
     }
-    return update.toString();
+    return sql;
+  }
+
+  /**
+   * Append audit assignments into UPDATE ... SET ... WHERE ... SQL.
+   *
+   * <p>We intentionally do this as string manipulation instead of mutating JSqlParser's columns/expressions lists:
+   * MyBatis produces JDBC parameter placeholders which can lead to column/expression list misalignment in some cases,
+   * generating invalid SQL like "SET name, update_user = ? ...".</p>
+   */
+  private String appendAuditAssignmentsToUpdateSql(String sql) {
+    if (!StringUtils.hasText(sql)) {
+      return sql;
+    }
+    String updateCol = props.getUpdateUserColumn();
+    String orgCol = props.getOrgIdColumn();
+    String username = currentUsername();
+    Long orgId = DataDomainContext.getOrgId();
+
+    List<String> additions = new ArrayList<>(2);
+    if (StringUtils.hasText(updateCol) && StringUtils.hasText(username) && !sql.toLowerCase(Locale.ROOT).contains(updateCol.toLowerCase(Locale.ROOT))) {
+      additions.add(updateCol + " = " + sqlStringLiteral(username));
+    }
+    if (props.isApplyOrgIdOnUpdate() && StringUtils.hasText(orgCol) && orgId != null
+        && !sql.toLowerCase(Locale.ROOT).contains(orgCol.toLowerCase(Locale.ROOT))) {
+      additions.add(orgCol + " = " + orgId);
+    }
+    if (additions.isEmpty()) {
+      return sql;
+    }
+
+    String upper = sql.toUpperCase(Locale.ROOT);
+    int setIdx = upper.indexOf(" SET ");
+    if (setIdx < 0) {
+      return sql;
+    }
+    int whereIdx = upper.indexOf(" WHERE ", setIdx + 5);
+    if (whereIdx < 0) {
+      // UPDATE without WHERE: still append at end
+      whereIdx = sql.length();
+    }
+
+    String beforeWhere = sql.substring(0, whereIdx).trim();
+    String afterWhere = sql.substring(whereIdx);
+    // ensure there is a comma between existing SET assignments and our additions
+    if (!beforeWhere.endsWith(",")) {
+      beforeWhere = beforeWhere + ",";
+    }
+    beforeWhere = beforeWhere + " " + String.join(", ", additions) + " ";
+    return beforeWhere + afterWhere;
   }
 
   private Insert applyAuditColumnsToInsert(Insert insert) {
@@ -552,37 +602,6 @@ public class DataDomainMybatisInterceptor implements Interceptor {
       return (Insert) CCJSqlParserUtil.parse(rebuilt);
     } catch (JSQLParserException e) {
       return insert;
-    }
-  }
-
-  private void applyAuditColumnsToUpdate(Update update) {
-    Table table = update.getTable();
-    if (table == null || !isTenantTable(table.getName())) {
-      return;
-    }
-    List<Column> cols = update.getColumns();
-    List<Expression> exprs = update.getExpressions();
-    if (cols == null) {
-      cols = new ArrayList<>();
-      update.setColumns(cols);
-    }
-    if (exprs == null) {
-      exprs = new ArrayList<>();
-      update.setExpressions(exprs);
-    }
-
-    String updateCol = props.getUpdateUserColumn();
-    String orgCol = props.getOrgIdColumn();
-    String username = currentUsername();
-    Long orgId = DataDomainContext.getOrgId();
-
-    if (StringUtils.hasText(updateCol) && !hasColumn(cols, updateCol) && StringUtils.hasText(username)) {
-      cols.add(new Column(updateCol));
-      exprs.add(new StringValue(username));
-    }
-    if (props.isApplyOrgIdOnUpdate() && StringUtils.hasText(orgCol) && !hasColumn(cols, orgCol) && orgId != null) {
-      cols.add(new Column(orgCol));
-      exprs.add(new LongValue(orgId));
     }
   }
 
