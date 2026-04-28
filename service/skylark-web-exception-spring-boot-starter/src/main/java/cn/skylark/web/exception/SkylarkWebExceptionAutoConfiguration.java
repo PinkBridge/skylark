@@ -10,6 +10,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.Ordered;
 
+import javax.servlet.DispatcherType;
+import java.util.EnumSet;
+
 @Configuration
 @ConditionalOnWebApplication
 @ConditionalOnClass(name = "org.springframework.web.servlet.DispatcherServlet")
@@ -23,6 +26,7 @@ public class SkylarkWebExceptionAutoConfiguration {
     FilterRegistrationBean<SkylarkExceptionLoggingFilter> bean = new FilterRegistrationBean<>();
     bean.setFilter(new SkylarkExceptionLoggingFilter(props));
     bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
+    bean.setDispatcherTypes(EnumSet.of(DispatcherType.REQUEST, DispatcherType.ERROR, DispatcherType.ASYNC));
     return bean;
   }
 }
