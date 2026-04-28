@@ -46,6 +46,10 @@ public class DynamicApiServiceGatewayFilter implements GlobalFilter, Ordered {
         if (path.startsWith("/api/business-service/")) {
             return chain.filter(exchange);
         }
+        // aiot-api-service route: controllers use full /api/aiot-service/** prefix.
+        if (path.startsWith("/api/aiot-service/")) {
+            return chain.filter(exchange);
+        }
 
         Matcher matcher = API_SERVICE_PATTERN.matcher(path);
         if (!matcher.matches()) {
