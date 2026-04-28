@@ -10,8 +10,10 @@ import cn.skylark.permission.authorization.service.ApiImportService;
 import cn.skylark.permission.authorization.service.ApiService;
 import cn.skylark.permission.authorization.service.ImportJsonReader;
 import cn.skylark.permission.authorization.service.TenantPermissionCeilingService;
+import cn.skylark.permission.authorization.support.PlatformRoleConstants;
 import cn.skylark.permission.utils.PageResult;
 import cn.skylark.permission.utils.Ret;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -58,9 +60,12 @@ public class ApiController {
    * 平台/超管上下文下返回全量列表。
    */
   @GetMapping("/grantable")
-  public Ret<List<SysApi>> grantableList(@RequestParam(required = false) String app) {
+  public Ret<List<SysApi>> grantableList(Authentication authentication,
+                                         @RequestParam(required = false) String app) {
     Long tenantId = ceilingService.resolveTenantIdOrNull();
-    if (tenantId == null) {
+    boolean superAdmin = authentication != null && authentication.getAuthorities().stream()
+        .anyMatch(a -> PlatformRoleConstants.SUPER_ADMIN_ROLE_NAME.equals(a.getAuthority()));
+    if (tenantId == null || superAdmin) {
       return Ret.data(apiService.list(app));
     }
     Long adminRoleId = ceilingService.tenantAdminRoleId(tenantId);
