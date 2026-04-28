@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "source": "aiot-service controllers + aiot-web api clients (generated from code)",
+  "apis": [
+    { "method": "GET", "path": "/api/aiot-service/mgmt/products", "permlabel": "iot.products.detail", "moduleKey": "aiot.product" },
+    { "method": "POST", "path": "/api/aiot-service/mgmt/products", "permlabel": "iot.products.new", "moduleKey": "aiot.product" },
+    { "method": "GET", "path": "/api/aiot-service/mgmt/products/**", "permlabel": "iot.products.detail", "moduleKey": "aiot.product" },
+    { "method": "PUT", "path": "/api/aiot-service/mgmt/products/**", "permlabel": "iot.products.edit", "moduleKey": "aiot.product" },
+    { "method": "DELETE", "path": "/api/aiot-service/mgmt/products/**", "permlabel": "iot.products.delete", "moduleKey": "aiot.product" },
+    { "method": "PATCH", "path": "/api/aiot-service/mgmt/products/**/enable", "permlabel": "iot.products.enable", "moduleKey": "aiot.product" },
+    { "method": "PATCH", "path": "/api/aiot-service/mgmt/products/**/disable", "permlabel": "iot.products.disable", "moduleKey": "aiot.product" },
+    { "method": "POST", "path": "/api/aiot-service/mgmt/products/**/copy", "permlabel": "iot.products.copy", "moduleKey": "aiot.product" },
+    { "method": "GET", "path": "/api/aiot-service/mgmt/products/**/data-channels", "permlabel": "iot.products.detail", "moduleKey": "aiot.product" },
+    { "method": "PATCH", "path": "/api/aiot-service/mgmt/products/**/data-channels/**", "permlabel": "iot.products.edit", "moduleKey": "aiot.product" },
+    { "method": "GET", "path": "/api/aiot-service/mgmt/products/**/thing-model", "permlabel": "iot.products.detail", "moduleKey": "aiot.product" },
+    { "method": "PUT", "path": "/api/aiot-service/mgmt/products/**/thing-model", "permlabel": "iot.thing-model.edit", "moduleKey": "aiot.product" },
+
+    { "method": "GET", "path": "/api/aiot-service/mgmt/devices", "permlabel": "iot.devices.detail", "moduleKey": "aiot.device" },
+    { "method": "GET", "path": "/api/aiot-service/mgmt/devices/page", "permlabel": "iot.devices.detail", "moduleKey": "aiot.device" },
+
+    { "method": "GET", "path": "/api/aiot-service/mgmt/products/**/devices", "permlabel": "iot.devices.detail", "moduleKey": "aiot.device" },
+    { "method": "POST", "path": "/api/aiot-service/mgmt/products/**/devices", "permlabel": "iot.devices.new", "moduleKey": "aiot.device" },
+    { "method": "GET", "path": "/api/aiot-service/mgmt/products/**/devices/**", "permlabel": "iot.devices.detail", "moduleKey": "aiot.device" },
+    { "method": "PUT", "path": "/api/aiot-service/mgmt/products/**/devices/**", "permlabel": "iot.devices.edit", "moduleKey": "aiot.device" },
+    { "method": "DELETE", "path": "/api/aiot-service/mgmt/products/**/devices/**", "permlabel": "iot.devices.delete", "moduleKey": "aiot.device" },
+    { "method": "PATCH", "path": "/api/aiot-service/mgmt/products/**/devices/**/enable", "permlabel": "iot.devices.enable", "moduleKey": "aiot.device" },
+    { "method": "PATCH", "path": "/api/aiot-service/mgmt/products/**/devices/**/disable", "permlabel": "iot.devices.disable", "moduleKey": "aiot.device" },
+    { "method": "POST", "path": "/api/aiot-service/mgmt/products/**/devices/**/reset-secret", "permlabel": "iot.devices.reset-secret", "moduleKey": "aiot.device" },
+    { "method": "GET", "path": "/api/aiot-service/mgmt/products/**/devices/**/data-channels", "permlabel": "iot.devices.detail", "moduleKey": "aiot.device" },
+    { "method": "PATCH", "path": "/api/aiot-service/mgmt/products/**/devices/**/data-channels/**", "permlabel": "iot.devices.edit", "moduleKey": "aiot.device" },
+    { "method": "GET", "path": "/api/aiot-service/mgmt/products/**/devices/**/current-properties", "permlabel": "iot.devices.detail", "moduleKey": "aiot.device" },
+    { "method": "GET", "path": "/api/aiot-service/mgmt/products/**/devices/**/property-records", "permlabel": "iot.devices.detail", "moduleKey": "aiot.device" },
+    { "method": "GET", "path": "/api/aiot-service/mgmt/products/**/devices/**/property-records/**/latest", "permlabel": "iot.devices.detail", "moduleKey": "aiot.device" },
+    { "method": "GET", "path": "/api/aiot-service/mgmt/products/**/devices/**/event-records", "permlabel": "iot.devices.detail", "moduleKey": "aiot.device" },
+    { "method": "GET", "path": "/api/aiot-service/mgmt/products/**/devices/**/service-records", "permlabel": "iot.devices.detail", "moduleKey": "aiot.device" },
+    { "method": "GET", "path": "/api/aiot-service/mgmt/products/**/devices/**/connect-records", "permlabel": "iot.devices.detail", "moduleKey": "aiot.device" },
+    { "method": "POST", "path": "/api/aiot-service/mgmt/products/**/devices/**/connect-records", "permlabel": "iot.devices.edit", "moduleKey": "aiot.device" },
+
+    { "method": "GET", "path": "/api/aiot-service/mgmt/device-groups", "permlabel": "iot.device-groups.detail", "moduleKey": "aiot.device-group" },
+    { "method": "POST", "path": "/api/aiot-service/mgmt/device-groups", "permlabel": "iot.device-groups.new", "moduleKey": "aiot.device-group" },
+    { "method": "GET", "path": "/api/aiot-service/mgmt/device-groups/**", "permlabel": "iot.device-groups.detail", "moduleKey": "aiot.device-group" },
+    { "method": "PUT", "path": "/api/aiot-service/mgmt/device-groups/**", "permlabel": "iot.device-groups.edit", "moduleKey": "aiot.device-group" },
+    { "method": "DELETE", "path": "/api/aiot-service/mgmt/device-groups/**", "permlabel": "iot.device-groups.delete", "moduleKey": "aiot.device-group" },
+    { "method": "GET", "path": "/api/aiot-service/mgmt/device-groups/**/devices", "permlabel": "iot.device-groups.detail", "moduleKey": "aiot.device-group" },
+    { "method": "POST", "path": "/api/aiot-service/mgmt/device-groups/**/devices", "permlabel": "iot.device-groups.manage-devices", "moduleKey": "aiot.device-group" },
+    { "method": "DELETE", "path": "/api/aiot-service/mgmt/device-groups/**/devices/**/**", "permlabel": "iot.device-groups.manage-devices", "moduleKey": "aiot.device-group" }
+  ]
+}
+

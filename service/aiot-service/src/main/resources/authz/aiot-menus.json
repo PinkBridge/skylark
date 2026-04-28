@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "source": "aiot-web routes (generated from code)",
+  "menus": [
+    {
+      "permlabel": "iot.group",
+      "parentPermlabel": null,
+      "type": "menu",
+      "name": "IoT",
+      "nameI18n": { "zh": "物联网", "en": "IoT" },
+      "path": "/iot",
+      "icon": "Cpu",
+      "sort": 10,
+      "hidden": false,
+      "moduleKey": "aiot.iot"
+    },
+
+    {
+      "permlabel": "iot.products.view",
+      "parentPermlabel": "iot.group",
+      "type": "menu",
+      "name": "产品管理",
+      "nameI18n": { "zh": "产品管理", "en": "Products" },
+      "path": "/iot/products",
+      "icon": "Box",
+      "sort": 11,
+      "hidden": false,
+      "moduleKey": "aiot.product"
+    },
+    { "permlabel": "iot.products.new", "parentPermlabel": "iot.products.view", "type": "button", "name": "新建", "nameI18n": { "zh": "新建", "en": "New" }, "path": "", "icon": null, "sort": 1, "hidden": true, "moduleKey": "aiot.product" },
+    { "permlabel": "iot.products.detail", "parentPermlabel": "iot.products.view", "type": "button", "name": "详情", "nameI18n": { "zh": "详情", "en": "Detail" }, "path": "", "icon": null, "sort": 2, "hidden": true, "moduleKey": "aiot.product" },
+    { "permlabel": "iot.products.edit", "parentPermlabel": "iot.products.view", "type": "button", "name": "编辑", "nameI18n": { "zh": "编辑", "en": "Edit" }, "path": "", "icon": null, "sort": 3, "hidden": true, "moduleKey": "aiot.product" },
+    { "permlabel": "iot.products.delete", "parentPermlabel": "iot.products.view", "type": "button", "name": "删除", "nameI18n": { "zh": "删除", "en": "Delete" }, "path": "", "icon": null, "sort": 4, "hidden": true, "moduleKey": "aiot.product" },
+    { "permlabel": "iot.products.copy", "parentPermlabel": "iot.products.view", "type": "button", "name": "复制", "nameI18n": { "zh": "复制", "en": "Copy" }, "path": "", "icon": null, "sort": 5, "hidden": true, "moduleKey": "aiot.product" },
+    { "permlabel": "iot.products.enable", "parentPermlabel": "iot.products.view", "type": "button", "name": "启用", "nameI18n": { "zh": "启用", "en": "Enable" }, "path": "", "icon": null, "sort": 6, "hidden": true, "moduleKey": "aiot.product" },
+    { "permlabel": "iot.products.disable", "parentPermlabel": "iot.products.view", "type": "button", "name": "禁用", "nameI18n": { "zh": "禁用", "en": "Disable" }, "path": "", "icon": null, "sort": 7, "hidden": true, "moduleKey": "aiot.product" },
+    { "permlabel": "iot.thing-model.edit", "parentPermlabel": "iot.products.view", "type": "button", "name": "物模型编辑", "nameI18n": { "zh": "物模型编辑", "en": "Edit thing model" }, "path": "", "icon": null, "sort": 8, "hidden": true, "moduleKey": "aiot.product" },
+
+    {
+      "permlabel": "iot.devices.view",
+      "parentPermlabel": "iot.group",
+      "type": "menu",
+      "name": "设备管理",
+      "nameI18n": { "zh": "设备管理", "en": "Devices" },
+      "path": "/iot/devices",
+      "icon": "Monitor",
+      "sort": 12,
+      "hidden": false,
+      "moduleKey": "aiot.device"
+    },
+    { "permlabel": "iot.devices.new", "parentPermlabel": "iot.devices.view", "type": "button", "name": "新建", "nameI18n": { "zh": "新建", "en": "New" }, "path": "", "icon": null, "sort": 1, "hidden": true, "moduleKey": "aiot.device" },
+    { "permlabel": "iot.devices.detail", "parentPermlabel": "iot.devices.view", "type": "button", "name": "详情", "nameI18n": { "zh": "详情", "en": "Detail" }, "path": "", "icon": null, "sort": 2, "hidden": true, "moduleKey": "aiot.device" },
+    { "permlabel": "iot.devices.edit", "parentPermlabel": "iot.devices.view", "type": "button", "name": "编辑", "nameI18n": { "zh": "编辑", "en": "Edit" }, "path": "", "icon": null, "sort": 3, "hidden": true, "moduleKey": "aiot.device" },
+    { "permlabel": "iot.devices.delete", "parentPermlabel": "iot.devices.view", "type": "button", "name": "删除", "nameI18n": { "zh": "删除", "en": "Delete" }, "path": "", "icon": null, "sort": 4, "hidden": true, "moduleKey": "aiot.device" },
+    { "permlabel": "iot.devices.enable", "parentPermlabel": "iot.devices.view", "type": "button", "name": "启用", "nameI18n": { "zh": "启用", "en": "Enable" }, "path": "", "icon": null, "sort": 5, "hidden": true, "moduleKey": "aiot.device" },
+    { "permlabel": "iot.devices.disable", "parentPermlabel": "iot.devices.view", "type": "button", "name": "禁用", "nameI18n": { "zh": "禁用", "en": "Disable" }, "path": "", "icon": null, "sort": 6, "hidden": true, "moduleKey": "aiot.device" },
+    { "permlabel": "iot.devices.reset-secret", "parentPermlabel": "iot.devices.view", "type": "button", "name": "重置密钥", "nameI18n": { "zh": "重置密钥", "en": "Reset secret" }, "path": "", "icon": null, "sort": 7, "hidden": true, "moduleKey": "aiot.device" },
+    { "permlabel": "iot.devices.import", "parentPermlabel": "iot.devices.view", "type": "button", "name": "批量导入", "nameI18n": { "zh": "批量导入", "en": "Bulk import" }, "path": "", "icon": null, "sort": 8, "hidden": true, "moduleKey": "aiot.device" },
+
+    {
+      "permlabel": "iot.device-groups.view",
+      "parentPermlabel": "iot.group",
+      "type": "menu",
+      "name": "设备分组",
+      "nameI18n": { "zh": "设备分组", "en": "Device groups" },
+      "path": "/iot/device-groups",
+      "icon": "Collection",
+      "sort": 13,
+      "hidden": false,
+      "moduleKey": "aiot.device-group"
+    },
+    { "permlabel": "iot.device-groups.new", "parentPermlabel": "iot.device-groups.view", "type": "button", "name": "新建", "nameI18n": { "zh": "新建", "en": "New" }, "path": "", "icon": null, "sort": 1, "hidden": true, "moduleKey": "aiot.device-group" },
+    { "permlabel": "iot.device-groups.detail", "parentPermlabel": "iot.device-groups.view", "type": "button", "name": "详情", "nameI18n": { "zh": "详情", "en": "Detail" }, "path": "", "icon": null, "sort": 2, "hidden": true, "moduleKey": "aiot.device-group" },
+    { "permlabel": "iot.device-groups.edit", "parentPermlabel": "iot.device-groups.view", "type": "button", "name": "编辑", "nameI18n": { "zh": "编辑", "en": "Edit" }, "path": "", "icon": null, "sort": 3, "hidden": true, "moduleKey": "aiot.device-group" },
+    { "permlabel": "iot.device-groups.delete", "parentPermlabel": "iot.device-groups.view", "type": "button", "name": "删除", "nameI18n": { "zh": "删除", "en": "Delete" }, "path": "", "icon": null, "sort": 4, "hidden": true, "moduleKey": "aiot.device-group" },
+    { "permlabel": "iot.device-groups.manage-devices", "parentPermlabel": "iot.device-groups.view", "type": "button", "name": "管理设备", "nameI18n": { "zh": "管理设备", "en": "Manage devices" }, "path": "", "icon": null, "sort": 5, "hidden": true, "moduleKey": "aiot.device-group" }
+  ]
+}
+
