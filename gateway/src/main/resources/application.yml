@@ -27,6 +27,13 @@ spring:
             - Path=/api/permission/**
           filters:
             - PreserveHostHeader
+        - id: aiot-api-service
+          uri: ${services.aiot.uri:http://aiot-service}
+          order: -10
+          predicates:
+            - Path=/api/aiot-service/**
+          filters:
+            - PreserveHostHeader
         - id: business-api-service
           uri: ${services.business.uri:http://business-service}
           order: -10
