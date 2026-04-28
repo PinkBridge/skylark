@@ -15,5 +15,11 @@ public class SkylarkWebExceptionProperties {
    * Whether to include exception stack trace in logs for 4xx errors.
    */
   private boolean logBadRequestStacktrace = true;
+
+  /**
+   * Whether to log stack trace for uncaught exceptions at filter level.
+   * This is a safety net when exceptions are converted into error dispatch without logs.
+   */
+  private boolean logUncaughtStacktrace = true;
 }
 
