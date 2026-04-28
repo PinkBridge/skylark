@@ -59,8 +59,7 @@ export function importApis(appCode, file, dryRun = false) {
   const form = new FormData()
   form.append('appCode', appCode)
   form.append('file', file)
-  return http.post(`${API_PREFIX}:import?dryRun=${dryRun ? 'true' : 'false'}`, form, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  })
+  // Do not set Content-Type manually for FormData (axios will add boundary)
+  return http.post(`${API_PREFIX}/import?dryRun=${dryRun ? 'true' : 'false'}`, form)
 }
 
