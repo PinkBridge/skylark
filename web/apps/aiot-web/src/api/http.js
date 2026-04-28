@@ -59,6 +59,11 @@ service.interceptors.response.use(
       return response
     }
     const data = response.data
+    // Backends may return plain JSON without the Ret{code,data,message} envelope.
+    // Treat HTTP 2xx with non-envelope body as success.
+    if (data && (typeof data === 'object') && !Object.prototype.hasOwnProperty.call(data, 'code')) {
+      return data
+    }
     if (data && data.code === 200) {
       return data.data
     }
