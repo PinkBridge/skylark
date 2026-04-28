@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.FilterChain;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -25,11 +26,33 @@ public class SkylarkExceptionLoggingFilter extends OncePerRequestFilter {
   }
 
   @Override
+  protected boolean shouldNotFilterErrorDispatch() {
+    return false;
+  }
+
+  @Override
+  protected boolean shouldNotFilterAsyncDispatch() {
+    return false;
+  }
+
+  @Override
   protected void doFilterInternal(HttpServletRequest request,
                                   HttpServletResponse response,
                                   FilterChain filterChain) throws ServletException, IOException {
     try {
       filterChain.doFilter(request, response);
+
+      Throwable error = (Throwable) request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
+      if (error != null) {
+        if (props.isLogUncaughtStacktrace()) {
+          log.error("Error dispatch exception: {} {} -> {}", request.getMethod(), request.getRequestURI(), String.valueOf(error), error);
+        } else {
+          log.error("Error dispatch exception: {} {} -> {}", request.getMethod(), request.getRequestURI(), String.valueOf(error));
+        }
+      } else if (response.getStatus() >= 500) {
+        // In some flows container calls sendError(...) without an exception object.
+        log.error("Server error without exception object: {} {} -> status={}", request.getMethod(), request.getRequestURI(), response.getStatus());
+      }
     } catch (Throwable t) {
       if (props.isLogUncaughtStacktrace()) {
         log.error("Uncaught exception: {} {}", request.getMethod(), request.getRequestURI(), t);
