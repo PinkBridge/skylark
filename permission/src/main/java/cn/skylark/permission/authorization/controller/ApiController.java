@@ -3,14 +3,20 @@ package cn.skylark.permission.authorization.controller;
 import cn.skylark.permission.authorization.dto.ApiPageRequest;
 import cn.skylark.permission.authorization.dto.ApiResponseDTO;
 import cn.skylark.permission.authorization.dto.UpdateApiDTO;
+import cn.skylark.permission.authorization.dto.importing.ApiImportFile;
+import cn.skylark.permission.authorization.dto.importing.ImportSummary;
 import cn.skylark.permission.authorization.entity.SysApi;
+import cn.skylark.permission.authorization.service.ApiImportService;
 import cn.skylark.permission.authorization.service.ApiService;
+import cn.skylark.permission.authorization.service.ImportJsonReader;
 import cn.skylark.permission.authorization.service.TenantPermissionCeilingService;
 import cn.skylark.permission.utils.PageResult;
 import cn.skylark.permission.utils.Ret;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -26,6 +32,12 @@ public class ApiController {
 
   @Resource
   private TenantPermissionCeilingService ceilingService;
+
+  @Resource
+  private ImportJsonReader importJsonReader;
+
+  @Resource
+  private ApiImportService apiImportService;
 
   @GetMapping("/{id}")
   public Ret<ApiResponseDTO> get(@PathVariable Long id) {
@@ -95,6 +107,14 @@ public class ApiController {
   @PostMapping
   public Ret<Integer> create(@RequestBody SysApi api) {
     return Ret.data(apiService.create(api));
+  }
+
+  @PostMapping(":import")
+  public Ret<ImportSummary> importApis(@RequestParam String appCode,
+                                       @RequestParam("file") MultipartFile file,
+                                       @RequestParam(required = false, defaultValue = "false") Boolean dryRun) throws IOException {
+    ApiImportFile importFile = importJsonReader.read(file, ApiImportFile.class);
+    return Ret.data(apiImportService.importApis(appCode, importFile, Boolean.TRUE.equals(dryRun)));
   }
 
   @PutMapping("/{id}")

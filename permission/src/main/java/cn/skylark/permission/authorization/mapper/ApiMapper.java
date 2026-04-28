@@ -121,6 +121,12 @@ public interface ApiMapper {
    */
   int updateApiInfo(@Param("apiId") Long apiId, @Param("api") cn.skylark.permission.authorization.dto.UpdateApiDTO api);
 
+  SysApi selectActiveByMethodAndPath(@Param("method") String method, @Param("path") String path);
+
+  SysApi selectDeletedByMethodAndPath(@Param("method") String method, @Param("path") String path);
+
+  int reactivateById(@Param("id") Long id);
+
   /**
    * 按权限标识查询API ID
    */

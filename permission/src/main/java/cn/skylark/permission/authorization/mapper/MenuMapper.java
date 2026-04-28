@@ -57,6 +57,14 @@ public interface MenuMapper {
   List<SysMenu> selectMenusByUsername(@Param("username") String username,
                                       @Param("appCode") String appCode);
 
+  SysMenu selectActiveByAppCodeAndPermlabel(@Param("appCode") String appCode,
+                                            @Param("permlabel") String permlabel);
+
+  SysMenu selectDeletedByAppCodeAndPermlabel(@Param("appCode") String appCode,
+                                             @Param("permlabel") String permlabel);
+
+  int reactivateById(@Param("id") Long id);
+
   /**
    * 更新菜单信息
    *

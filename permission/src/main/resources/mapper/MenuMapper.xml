@@ -26,6 +26,32 @@
         WHERE id = #{id}
     </select>
 
+    <select id="selectActiveByAppCodeAndPermlabel" resultMap="MenuResult">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_menu
+        WHERE app_code = #{appCode}
+          AND permlabel = #{permlabel}
+          AND is_delete = 0
+        LIMIT 1
+    </select>
+
+    <select id="selectDeletedByAppCodeAndPermlabel" resultMap="MenuResult">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_menu
+        WHERE app_code = #{appCode}
+          AND permlabel = #{permlabel}
+          AND is_delete = 1
+        LIMIT 1
+    </select>
+
+    <update id="reactivateById">
+        UPDATE sys_menu
+        SET is_delete = 0
+        WHERE id = #{id}
+    </update>
+
     <sql id="Base_Column_List">
         id, parent_id, name, name_i18n, path, icon, sort, hidden, type, permlabel, module_key, app_code, create_time, update_time
     </sql>
@@ -37,7 +63,7 @@
         ORDER BY create_time DESC
     </select>
 
-    <insert id="insert" parameterType="cn.skylark.permission.authorization.entity.SysMenu">
+    <insert id="insert" parameterType="cn.skylark.permission.authorization.entity.SysMenu" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO sys_menu(parent_id, name, name_i18n, path, icon, sort, hidden, type, permlabel, module_key, app_code)
         VALUES (#{parentId}, #{name}, #{nameI18n}, #{path}, #{icon}, #{sort}, #{hidden}, #{type}, #{permlabel}, #{moduleKey}, #{appCode})
     </insert>

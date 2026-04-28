@@ -3,15 +3,21 @@ package cn.skylark.permission.authorization.controller;
 import cn.skylark.permission.authorization.dto.MenuResponseDTO;
 import cn.skylark.permission.authorization.dto.MenuTreeNode;
 import cn.skylark.permission.authorization.dto.UpdateMenuDTO;
+import cn.skylark.permission.authorization.dto.importing.ImportSummary;
+import cn.skylark.permission.authorization.dto.importing.MenuImportFile;
 import cn.skylark.permission.authorization.entity.SysMenu;
+import cn.skylark.permission.authorization.service.ImportJsonReader;
+import cn.skylark.permission.authorization.service.MenuImportService;
 import cn.skylark.permission.authorization.service.MenuService;
 import cn.skylark.permission.authorization.service.TenantPermissionCeilingService;
 import cn.skylark.permission.authorization.support.PlatformRoleConstants;
 import cn.skylark.permission.utils.Ret;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
@@ -27,6 +33,12 @@ public class MenuController {
 
   @Resource
   private TenantPermissionCeilingService ceilingService;
+
+  @Resource
+  private ImportJsonReader importJsonReader;
+
+  @Resource
+  private MenuImportService menuImportService;
 
   @GetMapping
   public Ret<List<MenuResponseDTO>> list(Locale locale,
@@ -46,6 +58,14 @@ public class MenuController {
   @PostMapping
   public Ret<Integer> create(@RequestBody SysMenu menu) {
     return Ret.data(menuService.create(menu));
+  }
+
+  @PostMapping(":import")
+  public Ret<ImportSummary> importMenus(@RequestParam String appCode,
+                                        @RequestParam("file") MultipartFile file,
+                                        @RequestParam(required = false, defaultValue = "false") Boolean dryRun) throws IOException {
+    MenuImportFile importFile = importJsonReader.read(file, MenuImportFile.class);
+    return Ret.data(menuImportService.importMenus(appCode, importFile, Boolean.TRUE.equals(dryRun)));
   }
 
   @PutMapping("/{id}")
