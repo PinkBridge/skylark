@@ -56,8 +56,8 @@ services:
 
   permission:
     build:
-      context: ./permission
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: permission/Dockerfile
       args:
         MAVEN_BUILD_IMAGE: ${MAVEN_BUILD_IMAGE:-maven:3.9-eclipse-temurin-17}
         JRE_IMAGE: ${JRE_IMAGE:-eclipse-temurin:17-jre-alpine}

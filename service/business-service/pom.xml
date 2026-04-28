@@ -38,6 +38,11 @@
     </dependency>
     <dependency>
       <groupId>cn.skylark</groupId>
+      <artifactId>skylark-web-exception-spring-boot-starter</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>cn.skylark</groupId>
       <artifactId>skylark-datadomain-spring-boot-starter</artifactId>
       <version>${project.version}</version>
     </dependency>

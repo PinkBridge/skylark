@@ -8,15 +8,18 @@ ARG JRE_IMAGE=eclipse-temurin:17-jre-alpine
 FROM ${MAVEN_BUILD_IMAGE} AS builder
 WORKDIR /build
 
-COPY pom.xml .
-COPY src ./src
+COPY service ./service
+COPY permission ./permission
 RUN --mount=type=cache,target=/root/.m2 \
-    mvn -B -q -DskipTests package
+    mvn -B -q -DskipTests -f service/pom.xml -pl skylark-web-exception-spring-boot-starter -am install
+
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B -q -DskipTests -f permission/pom.xml package
 
 FROM ${JRE_IMAGE}
 WORKDIR /app
 
-COPY --from=builder /build/target/*.jar /app/app.jar
+COPY --from=builder /build/permission/target/*.jar /app/app.jar
 
 EXPOSE 80
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
