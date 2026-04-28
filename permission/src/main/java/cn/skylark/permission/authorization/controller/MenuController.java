@@ -60,7 +60,7 @@ public class MenuController {
     return Ret.data(menuService.create(menu));
   }
 
-  @PostMapping(":import")
+  @PostMapping({":import", "/import"})
   public Ret<ImportSummary> importMenus(@RequestParam String appCode,
                                         @RequestParam("file") MultipartFile file,
                                         @RequestParam(required = false, defaultValue = "false") Boolean dryRun) throws IOException {

@@ -109,7 +109,7 @@ public class ApiController {
     return Ret.data(apiService.create(api));
   }
 
-  @PostMapping(":import")
+  @PostMapping({":import", "/import"})
   public Ret<ImportSummary> importApis(@RequestParam String appCode,
                                        @RequestParam("file") MultipartFile file,
                                        @RequestParam(required = false, defaultValue = "false") Boolean dryRun) throws IOException {
