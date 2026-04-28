@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.skylark.aiot_service.iot.mgmt.mapper.ProductMapper">
+
+  <resultMap id="ProductMap" type="cn.skylark.aiot_service.iot.mgmt.model.entity.ProductEntity">
+    <id column="id" property="id"/>
+    <result column="tenant_id" property="tenantId"/>
+    <result column="org_id" property="orgId"/>
+    <result column="product_key" property="productKey"/>
+    <result column="product_secret" property="productSecret"/>
+    <result column="name" property="name"/>
+    <result column="cover_image_url" property="coverImageUrl"/>
+    <result column="thumbnail_url" property="thumbnailUrl"/>
+    <result column="description" property="description"/>
+    <result column="protocol_type" property="protocolType"/>
+    <result column="device_type" property="deviceType"/>
+    <result column="status" property="status"/>
+    <result column="is_delete" property="isDelete"/>
+    <result column="create_user" property="createUser"/>
+    <result column="update_user" property="updateUser"/>
+    <result column="created_at" property="createdAt"/>
+    <result column="updated_at" property="updatedAt"/>
+  </resultMap>
+
+  <insert id="insert" parameterType="cn.skylark.aiot_service.iot.mgmt.model.entity.ProductEntity">
+    INSERT INTO iot_product(tenant_id, org_id, product_key, product_secret, name, cover_image_url, thumbnail_url, description, protocol_type, device_type, status, extra_json, is_delete, created_at, updated_at)
+    VALUES (#{tenantId}, #{orgId}, #{productKey}, #{productSecret}, #{name}, #{coverImageUrl}, #{thumbnailUrl}, #{description}, #{protocolType}, #{deviceType}, #{status}, NULL, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+  </insert>
+
+  <select id="findByProductKey" resultMap="ProductMap">
+    SELECT *
+    FROM iot_product
+    WHERE product_key = #{productKey}
+      AND is_delete = 0
+    LIMIT 1
+  </select>
+
+  <sql id="ProductQueryWhere">
+    <where>
+      AND is_delete = 0
+      <if test="productKey != null and productKey != ''">
+        AND product_key LIKE CONCAT('%', #{productKey}, '%')
+      </if>
+      <if test="name != null and name != ''">
+        AND name LIKE CONCAT('%', #{name}, '%')
+      </if>
+      <if test="status != null and status != ''">
+        AND status = #{status}
+      </if>
+    </where>
+  </sql>
+
+  <select id="listPage" resultMap="ProductMap">
+    SELECT *
+    FROM iot_product
+    <include refid="ProductQueryWhere"/>
+    ORDER BY created_at DESC
+    LIMIT #{pageSize} OFFSET #{offset}
+  </select>
+
+  <select id="countPage" resultType="long">
+    SELECT COUNT(1)
+    FROM iot_product
+    <include refid="ProductQueryWhere"/>
+  </select>
+
+  <update id="updateByProductKey" parameterType="cn.skylark.aiot_service.iot.mgmt.model.entity.ProductEntity">
+    UPDATE iot_product
+    SET name = #{name},
+        cover_image_url = #{coverImageUrl},
+        thumbnail_url = #{thumbnailUrl},
+        description = #{description},
+        protocol_type = #{protocolType},
+        device_type = #{deviceType},
+        updated_at = CURRENT_TIMESTAMP
+    WHERE product_key = #{productKey}
+      AND is_delete = 0
+  </update>
+
+  <update id="updateStatus">
+    UPDATE iot_product
+    SET status = #{status},
+        updated_at = CURRENT_TIMESTAMP
+    WHERE product_key = #{productKey}
+      AND is_delete = 0
+  </update>
+
+  <update id="deleteByProductKey">
+    UPDATE iot_product
+    SET is_delete = 1,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE product_key = #{productKey}
+      AND is_delete = 0
+  </update>
+
+</mapper>
+

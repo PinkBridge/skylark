@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.skylark.aiot_service.iot.mgmt.mapper.DeviceGroupRelMapper">
+
+  <resultMap id="DeviceGroupRelMap" type="cn.skylark.aiot_service.iot.mgmt.model.entity.DeviceGroupRelEntity">
+    <id column="id" property="id"/>
+    <result column="tenant_id" property="tenantId"/>
+    <result column="org_id" property="orgId"/>
+    <result column="group_key" property="groupKey"/>
+    <result column="product_key" property="productKey"/>
+    <result column="device_key" property="deviceKey"/>
+    <result column="is_delete" property="isDelete"/>
+    <result column="create_user" property="createUser"/>
+    <result column="update_user" property="updateUser"/>
+    <result column="created_at" property="createdAt"/>
+    <result column="updated_at" property="updatedAt"/>
+  </resultMap>
+
+  <insert id="insert" parameterType="cn.skylark.aiot_service.iot.mgmt.model.entity.DeviceGroupRelEntity">
+    INSERT INTO iot_device_group_rel(tenant_id, org_id, group_key, product_key, device_key, is_delete, created_at, updated_at)
+    VALUES (#{tenantId}, #{orgId}, #{groupKey}, #{productKey}, #{deviceKey}, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+  </insert>
+
+  <update id="delete">
+    UPDATE iot_device_group_rel
+    SET is_delete = 1,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE group_key = #{groupKey}
+      AND product_key = #{productKey}
+      AND device_key = #{deviceKey}
+      AND is_delete = 0
+  </update>
+
+  <update id="deleteByGroupKey">
+    UPDATE iot_device_group_rel
+    SET is_delete = 1,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE group_key = #{groupKey}
+      AND is_delete = 0
+  </update>
+
+  <update id="deleteByProductKey">
+    UPDATE iot_device_group_rel
+    SET is_delete = 1,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE product_key = #{productKey}
+      AND is_delete = 0
+  </update>
+
+  <update id="deleteByProductAndDevice">
+    UPDATE iot_device_group_rel
+    SET is_delete = 1,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE product_key = #{productKey}
+      AND device_key = #{deviceKey}
+      AND is_delete = 0
+  </update>
+
+  <select id="listByGroupKey" resultMap="DeviceGroupRelMap">
+    SELECT *
+    FROM iot_device_group_rel
+    WHERE group_key = #{groupKey}
+      AND is_delete = 0
+    ORDER BY created_at DESC, id DESC
+  </select>
+
+  <select id="countByGroupKey" resultType="long">
+    SELECT COUNT(*)
+    FROM iot_device_group_rel
+    WHERE group_key = #{groupKey}
+      AND is_delete = 0
+  </select>
+
+  <resultMap id="DeviceGroupMemberCountMap" type="cn.skylark.aiot_service.iot.mgmt.model.dto.DeviceGroupMemberCount">
+    <result column="gk" property="groupKey"/>
+    <result column="cnt" property="memberCount"/>
+  </resultMap>
+
+  <select id="countMembersByGroupKeys" resultMap="DeviceGroupMemberCountMap">
+    SELECT group_key AS gk, COUNT(*) AS cnt
+    FROM iot_device_group_rel
+    WHERE is_delete = 0
+      AND group_key IN
+      <foreach collection="groupKeys" item="gk" open="(" separator="," close=")">
+        #{gk}
+      </foreach>
+    GROUP BY group_key
+  </select>
+
+</mapper>
+

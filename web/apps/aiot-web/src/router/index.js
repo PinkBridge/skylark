@@ -23,6 +23,36 @@ const routes = [
         name: 'Dashboard',
         component: () => import('@/views/Dashboard.vue'),
         meta: { requiresAuth: true }
+      },
+      {
+        path: '/iot/products',
+        name: 'IotProductMgmt',
+        component: () => import('@/views/products/ProductDataList.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: '/iot/products/:productKey',
+        name: 'IotProductDetail',
+        component: () => import('@/views/products/ProductDetailPage.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: '/iot/devices',
+        name: 'IotDeviceMgmt',
+        component: () => import('@/views/devices/DeviceDataList.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: '/iot/device-groups',
+        name: 'IotDeviceGroups',
+        component: () => import('@/views/device-groups/DeviceGroupDataList.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: '/iot/devices/:productKey/:deviceKey',
+        name: 'IotDeviceDetail',
+        component: () => import('@/views/devices/DeviceDetailPage.vue'),
+        meta: { requiresAuth: true }
       }
     ]
   }

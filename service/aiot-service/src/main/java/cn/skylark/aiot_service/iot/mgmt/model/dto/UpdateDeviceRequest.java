@@ -1,0 +1,17 @@
+package cn.skylark.aiot_service.iot.mgmt.model.dto;
+
+import lombok.Data;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
+
+@Data
+public class UpdateDeviceRequest {
+  @NotBlank(message = "deviceName required")
+  @Size(max = 128, message = "deviceName too long")
+  private String deviceName;
+
+  @Size(max = 512, message = "address too long")
+  private String address;
+}
+

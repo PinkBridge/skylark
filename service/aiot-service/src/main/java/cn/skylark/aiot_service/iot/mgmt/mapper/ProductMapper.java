@@ -1,0 +1,31 @@
+package cn.skylark.aiot_service.iot.mgmt.mapper;
+
+import cn.skylark.aiot_service.iot.mgmt.model.entity.ProductEntity;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
+
+@Mapper
+public interface ProductMapper {
+  int insert(ProductEntity entity);
+
+  ProductEntity findByProductKey(@Param("productKey") String productKey);
+
+  List<ProductEntity> listPage(@Param("productKey") String productKey,
+                               @Param("name") String name,
+                               @Param("status") String status,
+                               @Param("offset") int offset,
+                               @Param("pageSize") int pageSize);
+
+  long countPage(@Param("productKey") String productKey,
+                 @Param("name") String name,
+                 @Param("status") String status);
+
+  int updateByProductKey(ProductEntity entity);
+
+  int updateStatus(@Param("productKey") String productKey, @Param("status") String status);
+
+  int deleteByProductKey(@Param("productKey") String productKey);
+}
+

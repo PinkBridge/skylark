@@ -1,0 +1,143 @@
+package cn.skylark.aiot_service.iot.access.service;
+
+import cn.skylark.aiot_service.iot.access.mapper.AccessDeviceMapper;
+import cn.skylark.aiot_service.iot.access.model.AccessDeviceRecord;
+import cn.skylark.aiot_service.iot.access.model.EmqxClientSessionEvent;
+import cn.skylark.aiot_service.iot.mgmt.model.dto.CreateDeviceConnectRecordRequest;
+import cn.skylark.aiot_service.iot.mgmt.service.DeviceService;
+import cn.skylark.aiot_service.iot.mgmt.service.MgmtException;
+import cn.skylark.datadomain.starter.context.DataDomainContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+import java.util.List;
+import java.util.Locale;
+
+@Service
+public class EmqxSessionWebhookService {
+  private static final Logger log = LoggerFactory.getLogger(EmqxSessionWebhookService.class);
+
+  private static final String CONNECTED = "connected";
+  private static final String DISCONNECTED = "disconnected";
+
+  private final AccessDeviceMapper accessDeviceMapper;
+  private final DeviceService deviceService;
+
+  public EmqxSessionWebhookService(AccessDeviceMapper accessDeviceMapper, DeviceService deviceService) {
+    this.accessDeviceMapper = accessDeviceMapper;
+    this.deviceService = deviceService;
+  }
+
+  public boolean handleSessionEvent(EmqxClientSessionEvent body) {
+    if (body == null) {
+      return false;
+    }
+    String action = resolveAction(body);
+    String deviceKey = safe(body.getUsername());
+    if (!StringUtils.hasText(deviceKey)) {
+      deviceKey = safe(body.getClientid());
+      if (StringUtils.hasText(deviceKey)) {
+        log.info("emqx webhook fallback: username empty, use clientid as device_key={}", deviceKey);
+      }
+    }
+    if (!StringUtils.hasText(deviceKey)) {
+      log.warn("emqx webhook skipped: empty username/clientid (device_key)");
+      return false;
+    }
+
+    List<AccessDeviceRecord> rows = accessDeviceMapper.findByDeviceKey(deviceKey);
+    if (rows == null || rows.isEmpty()) {
+      log.info("emqx webhook: no device for username/device_key={}", deviceKey);
+      return false;
+    }
+
+    AccessDeviceRecord dev = rows.get(0);
+    CreateDeviceConnectRecordRequest req = new CreateDeviceConnectRecordRequest();
+    req.setAction(action);
+    req.setClientId(trimToNull(body.getClientid(), 128));
+    req.setIp(trimToNull(parseIpFromPeername(body.getPeername()), 64));
+    req.setUserAgent(buildUserAgentNote(body, action));
+
+    Long tenantId = dev.getTenantId();
+    if (tenantId == null) {
+      log.warn("emqx webhook: device row has null tenant_id for device_key={}", deviceKey);
+      return false;
+    }
+
+    try {
+      DataDomainContext.setTenantId(tenantId);
+      try {
+        deviceService.createConnectRecord(dev.getProductKey(), dev.getDeviceKey(), req);
+      } finally {
+        DataDomainContext.clear();
+      }
+    } catch (MgmtException e) {
+      log.warn("emqx webhook createConnectRecord failed: {}", e.getMessage());
+    } catch (RuntimeException e) {
+      log.warn("emqx webhook createConnectRecord error", e);
+    }
+    return true;
+  }
+
+  private static String buildUserAgentNote(EmqxClientSessionEvent body, String action) {
+    if (DISCONNECTED.equals(action) && StringUtils.hasText(body.getReason())) {
+      String suffix = body.getNode() != null ? " node=" + body.getNode() : "";
+      String note = "emqx-disconnect:" + body.getReason() + suffix;
+      return trimToNull(note, 255);
+    }
+    if (StringUtils.hasText(body.getNode())) {
+      return trimToNull("emqx:" + body.getNode(), 255);
+    }
+    return null;
+  }
+
+  private static String resolveAction(EmqxClientSessionEvent body) {
+    String raw = safe(body.getEvent()).toLowerCase(Locale.ROOT);
+    if (!raw.isEmpty()) {
+      if (raw.contains("disconnect")) {
+        return DISCONNECTED;
+      }
+      if (raw.contains("connect")) {
+        return CONNECTED;
+      }
+    }
+    if (StringUtils.hasText(body.getReason())) {
+      return DISCONNECTED;
+    }
+    return CONNECTED;
+  }
+
+  private static String safe(String s) {
+    return s == null ? "" : s.trim();
+  }
+
+  static String parseIpFromPeername(String peername) {
+    if (!StringUtils.hasText(peername)) {
+      return "";
+    }
+    String p = peername.trim();
+    if (p.startsWith("[") && p.contains("]:")) {
+      int end = p.indexOf("]:");
+      return p.substring(1, end);
+    }
+    int colon = p.lastIndexOf(':');
+    if (colon > 0) {
+      return p.substring(0, colon).trim();
+    }
+    return p;
+  }
+
+  private static String trimToNull(String s, int max) {
+    if (!StringUtils.hasText(s)) {
+      return null;
+    }
+    String t = s.trim();
+    if (t.length() > max) {
+      t = t.substring(0, max);
+    }
+    return t.isEmpty() ? null : t;
+  }
+}
+

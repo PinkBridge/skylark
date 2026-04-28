@@ -1,0 +1,55 @@
+package cn.skylark.aiot_service.iot.mgmt.mapper;
+
+import cn.skylark.aiot_service.iot.mgmt.model.entity.DeviceEventRecordEntity;
+import cn.skylark.aiot_service.iot.mgmt.model.entity.DevicePropertyRecordEntity;
+import cn.skylark.aiot_service.iot.mgmt.model.entity.DeviceServiceRecordEntity;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
+
+@Mapper
+public interface DeviceRecordMapper {
+  int insertPropertyRecord(DevicePropertyRecordEntity entity);
+
+  int insertEventRecord(DeviceEventRecordEntity entity);
+
+  int insertServiceRecord(DeviceServiceRecordEntity entity);
+
+  int updateServiceRecordOutputByMessageId(@Param("productKey") String productKey,
+                                           @Param("deviceName") String deviceName,
+                                           @Param("serviceName") String serviceName,
+                                           @Param("messageId") String messageId,
+                                           @Param("outputTopic") String outputTopic,
+                                           @Param("outputDeviceTimestamp") Long outputDeviceTimestamp,
+                                           @Param("outputPayload") String outputPayload);
+
+  List<DevicePropertyRecordEntity> listPropertyRecords(@Param("productKey") String productKey,
+                                                       @Param("deviceKey") String deviceKey,
+                                                       @Param("offset") int offset,
+                                                       @Param("limit") int limit);
+
+  long countPropertyRecords(@Param("productKey") String productKey,
+                            @Param("deviceKey") String deviceKey);
+
+  DevicePropertyRecordEntity findLatestPropertyRecord(@Param("productKey") String productKey,
+                                                      @Param("deviceKey") String deviceKey,
+                                                      @Param("propertyIdentifier") String propertyIdentifier);
+
+  List<DeviceEventRecordEntity> listEventRecords(@Param("productKey") String productKey,
+                                                 @Param("deviceKey") String deviceKey,
+                                                 @Param("offset") int offset,
+                                                 @Param("limit") int limit);
+
+  long countEventRecords(@Param("productKey") String productKey,
+                         @Param("deviceKey") String deviceKey);
+
+  List<DeviceServiceRecordEntity> listServiceRecords(@Param("productKey") String productKey,
+                                                     @Param("deviceKey") String deviceKey,
+                                                     @Param("offset") int offset,
+                                                     @Param("limit") int limit);
+
+  long countServiceRecords(@Param("productKey") String productKey,
+                           @Param("deviceKey") String deviceKey);
+}
+

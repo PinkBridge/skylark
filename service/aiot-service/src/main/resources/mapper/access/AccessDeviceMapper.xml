@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.skylark.aiot_service.iot.access.mapper.AccessDeviceMapper">
+
+  <resultMap id="DeviceMap" type="cn.skylark.aiot_service.iot.access.model.AccessDeviceRecord">
+    <result column="tenant_id" property="tenantId"/>
+    <result column="product_key" property="productKey"/>
+    <result column="device_key" property="deviceKey"/>
+    <result column="secret" property="secret"/>
+    <result column="status" property="status"/>
+    <result column="protocol_type" property="protocolType"/>
+    <result column="protocol_version" property="protocolVersion"/>
+  </resultMap>
+
+  <select id="findByDeviceKey" resultMap="DeviceMap">
+    SELECT tenant_id, product_key, device_key, secret, status, protocol_type, protocol_version
+    FROM iot_device
+    WHERE device_key = #{deviceKey}
+  </select>
+
+</mapper>
+

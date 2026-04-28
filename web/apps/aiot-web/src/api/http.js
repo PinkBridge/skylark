@@ -73,15 +73,20 @@ service.interceptors.response.use(
       return Promise.reject(data.message)
     }
     if (data && data.code === 403) {
-      ElMessage.error(t('AccessDeniedNotice'))
+      if (!response.config?.suppressErrorMessage) {
+        ElMessage.error(t('AccessDeniedNotice'))
+      }
       return Promise.reject(data.message)
     }
     if (data && data.message) {
-      ElMessage.error(data.message)
+      if (!response.config?.suppressErrorMessage) {
+        ElMessage.error(data.message)
+      }
     }
     return Promise.reject(data?.message || 'error')
   },
   (error) => {
+    const suppressErrorMessage = error.config?.suppressErrorMessage
     const { response } = error
     let message = t('RequestFailedNotice')
     if (response) {
@@ -97,7 +102,9 @@ service.interceptors.response.use(
     } else if (error.message?.includes('timeout')) {
       message = t('RequestTimeoutNotice')
     }
-    ElMessage.error(message)
+    if (!suppressErrorMessage) {
+      ElMessage.error(message)
+    }
     return Promise.reject(error)
   }
 )
@@ -111,6 +118,9 @@ const http = {
   },
   put(url, data = {}, config = {}) {
     return service.put(url, data, config)
+  },
+  patch(url, data = {}, config = {}) {
+    return service.patch(url, data, config)
   },
   delete(url, params = {}, config = {}) {
     return service.delete(url, { params, ...config })

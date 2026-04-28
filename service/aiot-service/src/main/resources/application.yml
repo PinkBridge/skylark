@@ -4,6 +4,14 @@ server:
 spring:
   application:
     name: aiot-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://mysql:3306/skylark_aiot?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:123456}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:com.mysql.cj.jdbc.Driver}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
 
 management:
   endpoints:
@@ -21,14 +29,14 @@ skylark:
     # - app-code: identifies this service in permission RBAC snapshots
     # - permission-base-url: permission service base URL in docker compose
     # - client-id/client-secret: service-to-permission client credentials (reuse seeded skylark-service)
-    app-code: skylark-demo-service
+    app-code: aiot-service
     permission-base-url: http://permission
     client-id: skylark-service
     client-secret: 112233
     sync-fixed-delay-ms: 30000
     ignore-paths:
       - /actuator/**
-      - /api/business-service/demo/**
+      - /api/aiot-service/public/**
     jwt:
       enabled: true
       # Must match permission service oauth.signingKey
@@ -44,5 +52,48 @@ skylark:
     # data-scope-resolve-path: /api/permission/internal/resolved-data-scope
     # resolve-cache-ttl-ms: 60000
     #
-    # MyBatis rewrite is opt-in: configure tenant-tables + row-scope-rules when you add MyBatis.
+    # MyBatis rewrite is opt-in.
+    # For aiot-service we enable tenant tables + unified audit/soft-delete columns.
+    tenant-tables:
+      - iot_product
+      - iot_device
+      - iot_device_thing_model
+      - iot_device_connect_record
+      - iot_device_property_record
+      - iot_device_event_record
+      - iot_device_service_record
+      - iot_device_group
+      - iot_device_group_rel
+      - iot_acl_policy
+    auto-fill-audit-fields: true
+    audit:
+      create-user-column: create_user
+      update-user-column: update_user
+      org-id-column: org_id
+    soft-delete:
+      enabled: true
+      column: is_delete
+      deleted-value: 1
+      not-deleted-value: 0
+
+mybatis:
+  mapper-locations: classpath*:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+iot:
+  access:
+    auth:
+      useDb: ${IOT_ACCESS_AUTH_USE_DB:true}
+    acl:
+      useDb: ${IOT_ACCESS_ACL_USE_DB:true}
+    webhook:
+      enabled: ${IOT_ACCESS_WEBHOOK_ENABLED:true}
+      secret: ${IOT_ACCESS_WEBHOOK_SECRET:}
+    emqx:
+      baseUrl: ${IOT_ACCESS_EMQX_BASE_URL:http://emqx:18083}
+      apiKey: ${IOT_ACCESS_EMQX_API_KEY:}
+      apiSecret: ${IOT_ACCESS_EMQX_API_SECRET:}
+      dashboardUsername: ${IOT_ACCESS_EMQX_DASHBOARD_USERNAME:admin}
+      dashboardPassword: ${IOT_ACCESS_EMQX_DASHBOARD_PASSWORD:public}
 
