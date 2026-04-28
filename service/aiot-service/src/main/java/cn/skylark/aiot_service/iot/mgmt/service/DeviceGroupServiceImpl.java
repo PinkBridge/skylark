@@ -158,7 +158,8 @@ public class DeviceGroupServiceImpl implements DeviceGroupService {
       try {
         deviceGroupRelMapper.insert(rel);
       } catch (DuplicateKeyException ignored) {
-        // idempotent add
+        // If the relation exists but was soft-deleted (is_delete=1), restore it.
+        deviceGroupRelMapper.restore(groupKey, rel.getProductKey(), rel.getDeviceKey());
       }
     }
   }

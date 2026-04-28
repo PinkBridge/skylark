@@ -1,0 +1,3 @@
+ALTER TABLE iot_device
+  ADD COLUMN device_type VARCHAR(32) NOT NULL DEFAULT 'DIRECT_DEVICE' AFTER device_key;
+

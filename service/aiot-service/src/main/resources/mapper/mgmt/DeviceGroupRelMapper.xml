@@ -33,6 +33,16 @@
       AND is_delete = 0
   </update>
 
+  <update id="restore">
+    UPDATE iot_device_group_rel
+    SET is_delete = 0,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE group_key = #{groupKey}
+      AND product_key = #{productKey}
+      AND device_key = #{deviceKey}
+      AND is_delete = 1
+  </update>
+
   <update id="deleteByGroupKey">
     UPDATE iot_device_group_rel
     SET is_delete = 1,

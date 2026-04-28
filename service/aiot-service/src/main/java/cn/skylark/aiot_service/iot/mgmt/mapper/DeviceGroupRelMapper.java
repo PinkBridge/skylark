@@ -15,6 +15,10 @@ public interface DeviceGroupRelMapper {
              @Param("productKey") String productKey,
              @Param("deviceKey") String deviceKey);
 
+  int restore(@Param("groupKey") String groupKey,
+              @Param("productKey") String productKey,
+              @Param("deviceKey") String deviceKey);
+
   int deleteByGroupKey(@Param("groupKey") String groupKey);
 
   int deleteByProductKey(@Param("productKey") String productKey);

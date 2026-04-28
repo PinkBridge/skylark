@@ -1974,6 +1974,26 @@ watch(
   gap: 8px;
 }
 
+.nested-enum-list .enum-item-row {
+  grid-template-columns: 64px minmax(0, 1fr);
+  padding: 6px 8px;
+}
+
+.nested-enum-list .enum-item-value {
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.nested-enum-list .enum-item-description {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.nested-enum-list .enum-toggle-button {
+  align-self: flex-end;
+}
+
 .nested-empty {
   padding: 12px;
   border-radius: 6px;
@@ -2127,11 +2147,15 @@ watch(
   font-weight: 500;
   color: var(--el-text-color-primary);
   word-break: break-word;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .enum-item-description {
   color: var(--el-text-color-regular);
   word-break: break-word;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .editor-actions {

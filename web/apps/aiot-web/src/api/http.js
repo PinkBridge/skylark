@@ -59,6 +59,11 @@ service.interceptors.response.use(
       return response
     }
     const data = response.data
+    // Some endpoints may legitimately return HTTP 2xx with an empty body.
+    // Treat it as success to avoid false "Request failed" toasts.
+    if (data === '' || data === null || data === undefined) {
+      return data
+    }
     // Backends may return plain JSON without the Ret{code,data,message} envelope.
     // Treat HTTP 2xx with non-envelope body as success.
     if (data && (typeof data === 'object') && !Object.prototype.hasOwnProperty.call(data, 'code')) {
