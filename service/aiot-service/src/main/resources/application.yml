@@ -65,6 +65,9 @@ skylark:
       - iot_device_group
       - iot_device_group_rel
       - iot_acl_policy
+      - iot_outbound_channel
+      - iot_outbound_subscription
+      - iot_outbound_delivery
     auto-fill-audit-fields: true
     audit:
       create-user-column: create_user
@@ -82,6 +85,10 @@ mybatis:
     map-underscore-to-camel-case: true
 
 iot:
+  integration:
+    retry-delay-ms: 30000
+    retry:
+      max-attempts: 8
   access:
     auth:
       useDb: ${IOT_ACCESS_AUTH_USE_DB:true}

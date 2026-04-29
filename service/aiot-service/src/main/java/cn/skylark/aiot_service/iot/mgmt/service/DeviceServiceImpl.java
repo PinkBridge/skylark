@@ -1,5 +1,8 @@
 package cn.skylark.aiot_service.iot.mgmt.service;
 
+import cn.skylark.aiot_service.iot.integration.NormalizedEventPublisher;
+import cn.skylark.aiot_service.iot.integration.model.IotIntegrationEventType;
+import cn.skylark.aiot_service.iot.integration.model.NormalizedEvent;
 import cn.skylark.aiot_service.iot.access.mapper.AclPolicyMapper;
 import cn.skylark.aiot_service.iot.access.model.AclPolicyRecord;
 import cn.skylark.aiot_service.iot.mgmt.mapper.DeviceConnectRecordMapper;
@@ -45,10 +48,13 @@ import org.springframework.util.StringUtils;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 @Service
@@ -72,6 +78,7 @@ public class DeviceServiceImpl implements DeviceService {
   private final DeviceThingModelMapper deviceThingModelMapper;
   private final AclPolicyMapper aclPolicyMapper;
   private final ObjectMapper objectMapper;
+  private final NormalizedEventPublisher normalizedEventPublisher;
 
   public DeviceServiceImpl(DeviceMapper deviceMapper,
                            DeviceRecordMapper deviceRecordMapper,
@@ -80,7 +87,8 @@ public class DeviceServiceImpl implements DeviceService {
                            ThingModelMapper thingModelMapper,
                            DeviceThingModelMapper deviceThingModelMapper,
                            AclPolicyMapper aclPolicyMapper,
-                           ObjectMapper objectMapper) {
+                           ObjectMapper objectMapper,
+                           NormalizedEventPublisher normalizedEventPublisher) {
     this.deviceMapper = deviceMapper;
     this.deviceRecordMapper = deviceRecordMapper;
     this.deviceConnectRecordMapper = deviceConnectRecordMapper;
@@ -89,6 +97,7 @@ public class DeviceServiceImpl implements DeviceService {
     this.deviceThingModelMapper = deviceThingModelMapper;
     this.aclPolicyMapper = aclPolicyMapper;
     this.objectMapper = objectMapper;
+    this.normalizedEventPublisher = normalizedEventPublisher;
   }
 
   @Override
@@ -114,6 +123,7 @@ public class DeviceServiceImpl implements DeviceService {
         deviceMapper.insert(entity);
         initDeviceThingModelSnapshot(product, entity);
         initDefaultAclIfNeeded(product, entity);
+        publishMgmtLifecycle(IotIntegrationEventType.MGMT_CREATED, entity, null);
         return get(productKey, entity.getDeviceKey());
       } catch (DuplicateKeyException e) {
         if (attempt >= 4) {
@@ -187,6 +197,15 @@ public class DeviceServiceImpl implements DeviceService {
       }
     } catch (DuplicateKeyException e) {
       throw new MgmtException(HttpStatus.CONFLICT, "device name already exists in this product");
+    }
+    DeviceEntity updated = deviceMapper.findByPkAndDeviceKey(productKey, deviceKey);
+    if (updated != null) {
+      Map<String, Object> extra = new LinkedHashMap<String, Object>();
+      extra.put("deviceName", name);
+      if (address != null) {
+        extra.put("address", address);
+      }
+      publishMgmtLifecycle(IotIntegrationEventType.MGMT_UPDATED, updated, extra);
     }
     return get(productKey, deviceKey);
   }
@@ -424,6 +443,13 @@ public class DeviceServiceImpl implements DeviceService {
   @Override
   public void delete(String productKey, String deviceKey) {
     assertProductExists(productKey);
+    DeviceEntity existing = deviceMapper.findByPkAndDeviceKey(productKey, deviceKey);
+    if (existing == null) {
+      throw new MgmtException(HttpStatus.NOT_FOUND, "device not found");
+    }
+    Map<String, Object> extra = new LinkedHashMap<String, Object>();
+    extra.put("isDelete", 1);
+    publishMgmtLifecycle(IotIntegrationEventType.MGMT_DELETED, existing, extra);
     if (deviceMapper.deleteByPkAndDeviceKey(productKey, deviceKey) == 0) {
       throw new MgmtException(HttpStatus.NOT_FOUND, "device not found");
     }
@@ -435,6 +461,32 @@ public class DeviceServiceImpl implements DeviceService {
       throw new MgmtException(HttpStatus.NOT_FOUND, "device not found");
     }
     return get(productKey, deviceKey);
+  }
+
+  private void publishMgmtLifecycle(String eventType, DeviceEntity entity, Map<String, Object> extra) {
+    if (entity == null || entity.getTenantId() == null) {
+      return;
+    }
+    Map<String, String> subject = new LinkedHashMap<String, String>();
+    subject.put("productKey", entity.getProductKey());
+    subject.put("deviceKey", entity.getDeviceKey());
+    Map<String, Object> data = new LinkedHashMap<String, Object>();
+    data.put("deviceName", entity.getDeviceName());
+    data.put("status", entity.getStatus());
+    if (extra != null) {
+      data.putAll(extra);
+    }
+    long now = System.currentTimeMillis();
+    normalizedEventPublisher.publish(NormalizedEvent.builder()
+        .eventId(UUID.randomUUID().toString())
+        .eventType(eventType)
+        .occurredAt(now)
+        .tenantId(entity.getTenantId())
+        .orgId(entity.getOrgId())
+        .source("aiot-service")
+        .subject(subject)
+        .data(data)
+        .build());
   }
 
   private void assertProductExists(String productKey) {

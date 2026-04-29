@@ -1,6 +1,9 @@
 package cn.skylark.aiot_service.iot.access.service;
 
 import cn.skylark.aiot_service.iot.access.model.UpstreamIngestRequest;
+import cn.skylark.aiot_service.iot.integration.NormalizedEventPublisher;
+import cn.skylark.aiot_service.iot.integration.model.IotIntegrationEventType;
+import cn.skylark.aiot_service.iot.integration.model.NormalizedEvent;
 import cn.skylark.aiot_service.iot.mgmt.mapper.DeviceRecordMapper;
 import cn.skylark.aiot_service.iot.mgmt.model.entity.DeviceEventRecordEntity;
 import cn.skylark.aiot_service.iot.mgmt.model.entity.DevicePropertyRecordEntity;
@@ -14,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class UpstreamIngestServiceImpl implements UpstreamIngestService {
@@ -22,10 +27,14 @@ public class UpstreamIngestServiceImpl implements UpstreamIngestService {
 
   private final DeviceRecordMapper deviceRecordMapper;
   private final ObjectMapper objectMapper;
+  private final NormalizedEventPublisher normalizedEventPublisher;
 
-  public UpstreamIngestServiceImpl(DeviceRecordMapper deviceRecordMapper, ObjectMapper objectMapper) {
+  public UpstreamIngestServiceImpl(DeviceRecordMapper deviceRecordMapper,
+                                   ObjectMapper objectMapper,
+                                   NormalizedEventPublisher normalizedEventPublisher) {
     this.deviceRecordMapper = deviceRecordMapper;
     this.objectMapper = objectMapper;
+    this.normalizedEventPublisher = normalizedEventPublisher;
   }
 
   @Override
@@ -43,7 +52,6 @@ public class UpstreamIngestServiceImpl implements UpstreamIngestService {
       return;
     }
 
-    // tenant_id should be present via datadomain filter (from headers). If not, skip to avoid bad data.
     Long tenantId = DataDomainContext.getTenantId();
     if (tenantId == null) {
       log.warn("iot.upstream ignored: missing tenantId, topic={}, traceId={}", topic, request.getTraceId());
@@ -71,6 +79,8 @@ public class UpstreamIngestServiceImpl implements UpstreamIngestService {
       e.setDeviceTimestamp(ts);
       e.setPayload(payload);
       deviceRecordMapper.insertEventRecord(e);
+      publishThingEvent(tenantId, orgId, d.productKey, d.deviceKey, d.nameOrIdentifier, topic, ts,
+          trimToNull(request.getTraceId()), payload);
       return;
     }
     if (d.type.equals("service_reply")) {
@@ -87,10 +97,11 @@ public class UpstreamIngestServiceImpl implements UpstreamIngestService {
       s.setDeviceTimestamp(ts);
       s.setPayload(payload);
       deviceRecordMapper.insertServiceRecord(s);
+      publishServiceReply(tenantId, orgId, d.productKey, d.deviceKey, d.nameOrIdentifier, topic, ts,
+          trimToNull(request.getTraceId()), payload);
       return;
     }
 
-    // raw / unknown: store as event record for traceability
     DeviceEventRecordEntity e = new DeviceEventRecordEntity();
     e.setTenantId(tenantId);
     e.setOrgId(orgId);
@@ -111,11 +122,13 @@ public class UpstreamIngestServiceImpl implements UpstreamIngestService {
       JsonNode root = objectMapper.readTree(payload == null ? "" : payload);
       JsonNode params = root.path("params");
       if (params != null && params.isObject()) {
+        Map<String, Object> props = new LinkedHashMap<String, Object>();
         Iterator<Map.Entry<String, JsonNode>> it = params.fields();
         while (it.hasNext()) {
           Map.Entry<String, JsonNode> entry = it.next();
           String identifier = entry.getKey();
           JsonNode v = entry.getValue();
+          props.put(identifier, jsonNodeToValue(v));
           DevicePropertyRecordEntity p = new DevicePropertyRecordEntity();
           p.setTenantId(tenantId);
           p.setOrgId(orgId);
@@ -130,12 +143,12 @@ public class UpstreamIngestServiceImpl implements UpstreamIngestService {
           p.setPayload(payload);
           deviceRecordMapper.insertPropertyRecord(p);
         }
+        publishPropertyReported(tenantId, orgId, productKey, deviceKey, topic, ts, traceId, props);
         return;
       }
     } catch (Exception ignore) {
       // fallthrough
     }
-    // fallback: unknown schema, store as a single record
     DevicePropertyRecordEntity p = new DevicePropertyRecordEntity();
     p.setTenantId(tenantId);
     p.setOrgId(orgId);
@@ -149,6 +162,105 @@ public class UpstreamIngestServiceImpl implements UpstreamIngestService {
     p.setDeviceTimestamp(ts);
     p.setPayload(payload);
     deviceRecordMapper.insertPropertyRecord(p);
+    Map<String, Object> props = new LinkedHashMap<String, Object>();
+    props.put("raw", payload);
+    publishPropertyReported(tenantId, orgId, productKey, deviceKey, topic, ts, traceId, props);
+  }
+
+  private void publishPropertyReported(Long tenantId, Long orgId, String productKey, String deviceKey,
+                                       String topic, long ts, String traceId, Map<String, Object> properties) {
+    Map<String, String> subject = new LinkedHashMap<String, String>();
+    subject.put("productKey", productKey);
+    subject.put("deviceKey", deviceKey);
+    Map<String, Object> data = new LinkedHashMap<String, Object>();
+    data.put("properties", properties);
+    data.put("topic", topic);
+    data.put("deviceTimestamp", ts);
+    if (traceId != null) {
+      data.put("traceId", traceId);
+    }
+    normalizedEventPublisher.publish(NormalizedEvent.builder()
+        .eventId(UUID.randomUUID().toString())
+        .eventType(IotIntegrationEventType.PROPERTY_REPORTED)
+        .occurredAt(ts)
+        .tenantId(tenantId)
+        .orgId(orgId)
+        .source("aiot-service")
+        .subject(subject)
+        .data(data)
+        .build());
+  }
+
+  private void publishThingEvent(Long tenantId, Long orgId, String productKey, String deviceKey,
+                                 String eventIdentifier, String topic, long ts, String traceId, String payload) {
+    Map<String, String> subject = new LinkedHashMap<String, String>();
+    subject.put("productKey", productKey);
+    subject.put("deviceKey", deviceKey);
+    Map<String, Object> data = new LinkedHashMap<String, Object>();
+    data.put("eventIdentifier", eventIdentifier);
+    data.put("topic", topic);
+    data.put("deviceTimestamp", ts);
+    data.put("payload", payload);
+    if (traceId != null) {
+      data.put("traceId", traceId);
+    }
+    normalizedEventPublisher.publish(NormalizedEvent.builder()
+        .eventId(UUID.randomUUID().toString())
+        .eventType(IotIntegrationEventType.EVENT_RAISED)
+        .occurredAt(ts)
+        .tenantId(tenantId)
+        .orgId(orgId)
+        .source("aiot-service")
+        .subject(subject)
+        .data(data)
+        .build());
+  }
+
+  private void publishServiceReply(Long tenantId, Long orgId, String productKey, String deviceKey,
+                                   String serviceName, String topic, long ts, String traceId, String payload) {
+    Map<String, String> subject = new LinkedHashMap<String, String>();
+    subject.put("productKey", productKey);
+    subject.put("deviceKey", deviceKey);
+    Map<String, Object> data = new LinkedHashMap<String, Object>();
+    data.put("serviceName", serviceName);
+    data.put("topic", topic);
+    data.put("deviceTimestamp", ts);
+    data.put("payload", payload);
+    if (traceId != null) {
+      data.put("traceId", traceId);
+    }
+    normalizedEventPublisher.publish(NormalizedEvent.builder()
+        .eventId(UUID.randomUUID().toString())
+        .eventType(IotIntegrationEventType.SERVICE_REPLY)
+        .occurredAt(ts)
+        .tenantId(tenantId)
+        .orgId(orgId)
+        .source("aiot-service")
+        .subject(subject)
+        .data(data)
+        .build());
+  }
+
+  private static Object jsonNodeToValue(JsonNode v) {
+    if (v == null || v.isNull()) {
+      return null;
+    }
+    if (v.isBoolean()) {
+      return v.booleanValue();
+    }
+    if (v.isInt()) {
+      return v.intValue();
+    }
+    if (v.isLong()) {
+      return v.longValue();
+    }
+    if (v.isDouble() || v.isFloat()) {
+      return v.doubleValue();
+    }
+    if (v.isTextual()) {
+      return v.asText();
+    }
+    return v.toString();
   }
 
   private String extractMessageId(String payload) {
@@ -222,4 +334,3 @@ public class UpstreamIngestServiceImpl implements UpstreamIngestService {
     return t.isEmpty() ? null : t;
   }
 }
-

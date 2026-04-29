@@ -3,6 +3,9 @@ package cn.skylark.aiot_service.iot.access.service;
 import cn.skylark.aiot_service.iot.access.mapper.AccessDeviceMapper;
 import cn.skylark.aiot_service.iot.access.model.AccessDeviceRecord;
 import cn.skylark.aiot_service.iot.access.model.EmqxClientSessionEvent;
+import cn.skylark.aiot_service.iot.integration.NormalizedEventPublisher;
+import cn.skylark.aiot_service.iot.integration.model.IotIntegrationEventType;
+import cn.skylark.aiot_service.iot.integration.model.NormalizedEvent;
 import cn.skylark.aiot_service.iot.mgmt.model.dto.CreateDeviceConnectRecordRequest;
 import cn.skylark.aiot_service.iot.mgmt.service.DeviceService;
 import cn.skylark.aiot_service.iot.mgmt.service.MgmtException;
@@ -12,8 +15,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class EmqxSessionWebhookService {
@@ -24,10 +30,14 @@ public class EmqxSessionWebhookService {
 
   private final AccessDeviceMapper accessDeviceMapper;
   private final DeviceService deviceService;
+  private final NormalizedEventPublisher normalizedEventPublisher;
 
-  public EmqxSessionWebhookService(AccessDeviceMapper accessDeviceMapper, DeviceService deviceService) {
+  public EmqxSessionWebhookService(AccessDeviceMapper accessDeviceMapper,
+                                   DeviceService deviceService,
+                                   NormalizedEventPublisher normalizedEventPublisher) {
     this.accessDeviceMapper = accessDeviceMapper;
     this.deviceService = deviceService;
+    this.normalizedEventPublisher = normalizedEventPublisher;
   }
 
   public boolean handleSessionEvent(EmqxClientSessionEvent body) {
@@ -66,19 +76,59 @@ public class EmqxSessionWebhookService {
       return false;
     }
 
-    try {
-      DataDomainContext.setTenantId(tenantId);
       try {
-        deviceService.createConnectRecord(dev.getProductKey(), dev.getDeviceKey(), req);
-      } finally {
-        DataDomainContext.clear();
-      }
-    } catch (MgmtException e) {
+        DataDomainContext.setTenantId(tenantId);
+        try {
+          deviceService.createConnectRecord(dev.getProductKey(), dev.getDeviceKey(), req);
+          publishConnectEvent(dev, action, body);
+        } finally {
+          DataDomainContext.clear();
+        }
+      } catch (MgmtException e) {
       log.warn("emqx webhook createConnectRecord failed: {}", e.getMessage());
     } catch (RuntimeException e) {
       log.warn("emqx webhook createConnectRecord error", e);
     }
     return true;
+  }
+
+  private void publishConnectEvent(AccessDeviceRecord dev, String action, EmqxClientSessionEvent body) {
+    if (dev == null || dev.getTenantId() == null) {
+      return;
+    }
+    String eventType = CONNECTED.equals(action)
+        ? IotIntegrationEventType.CONNECT_CONNECTED
+        : IotIntegrationEventType.CONNECT_DISCONNECTED;
+    Map<String, String> subject = new LinkedHashMap<String, String>();
+    subject.put("productKey", dev.getProductKey());
+    subject.put("deviceKey", dev.getDeviceKey());
+    Map<String, Object> data = new LinkedHashMap<String, Object>();
+    data.put("action", action);
+    if (body != null) {
+      if (StringUtils.hasText(body.getClientid())) {
+        data.put("clientid", body.getClientid());
+      }
+      if (StringUtils.hasText(body.getReason())) {
+        data.put("reason", body.getReason());
+      }
+      if (StringUtils.hasText(body.getNode())) {
+        data.put("node", body.getNode());
+      }
+      if (body.getTimestamp() != null) {
+        data.put("emqxTimestamp", body.getTimestamp());
+      }
+    }
+    long now = System.currentTimeMillis();
+    normalizedEventPublisher.publish(NormalizedEvent.builder()
+        .eventId(UUID.randomUUID().toString())
+        .eventType(eventType)
+        .occurredAt(now)
+        .tenantId(dev.getTenantId())
+        .orgId(null)
+        .source("aiot-service")
+        .subject(subject)
+        .data(data)
+        .build());
   }
 
   private static String buildUserAgentNote(EmqxClientSessionEvent body, String action) {
