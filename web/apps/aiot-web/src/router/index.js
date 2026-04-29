@@ -49,6 +49,12 @@ const routes = [
         meta: { requiresAuth: true }
       },
       {
+        path: '/iot/integration',
+        name: 'IotIntegration',
+        component: () => import('@/views/integration/IntegrationConsole.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: '/iot/devices/:productKey/:deviceKey',
         name: 'IotDeviceDetail',
         component: () => import('@/views/devices/DeviceDetailPage.vue'),

@@ -73,7 +73,21 @@
     { "permlabel": "iot.device-groups.detail", "parentPermlabel": "iot.device-groups.view", "type": "button", "name": "详情", "nameI18n": { "zh": "详情", "en": "Detail" }, "path": "", "icon": null, "sort": 2, "hidden": true, "moduleKey": "aiot.device-group" },
     { "permlabel": "iot.device-groups.edit", "parentPermlabel": "iot.device-groups.view", "type": "button", "name": "编辑", "nameI18n": { "zh": "编辑", "en": "Edit" }, "path": "", "icon": null, "sort": 3, "hidden": true, "moduleKey": "aiot.device-group" },
     { "permlabel": "iot.device-groups.delete", "parentPermlabel": "iot.device-groups.view", "type": "button", "name": "删除", "nameI18n": { "zh": "删除", "en": "Delete" }, "path": "", "icon": null, "sort": 4, "hidden": true, "moduleKey": "aiot.device-group" },
-    { "permlabel": "iot.device-groups.manage-devices", "parentPermlabel": "iot.device-groups.view", "type": "button", "name": "管理设备", "nameI18n": { "zh": "管理设备", "en": "Manage devices" }, "path": "", "icon": null, "sort": 5, "hidden": true, "moduleKey": "aiot.device-group" }
+    { "permlabel": "iot.device-groups.manage-devices", "parentPermlabel": "iot.device-groups.view", "type": "button", "name": "管理设备", "nameI18n": { "zh": "管理设备", "en": "Manage devices" }, "path": "", "icon": null, "sort": 5, "hidden": true, "moduleKey": "aiot.device-group" },
+
+    {
+      "permlabel": "iot.integration.detail",
+      "parentPermlabel": "iot.group",
+      "type": "menu",
+      "name": "应用集成",
+      "nameI18n": { "zh": "应用集成", "en": "Integration" },
+      "path": "/iot/integration",
+      "icon": "Share",
+      "sort": 14,
+      "hidden": false,
+      "moduleKey": "aiot.integration"
+    },
+    { "permlabel": "iot.integration.edit", "parentPermlabel": "iot.integration.detail", "type": "button", "name": "配置编辑", "nameI18n": { "zh": "配置编辑", "en": "Edit integration" }, "path": "", "icon": null, "sort": 1, "hidden": true, "moduleKey": "aiot.integration" }
   ]
 }
 
