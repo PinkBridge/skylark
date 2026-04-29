@@ -14,6 +14,7 @@ import cn.skylark.aiot_service.iot.mgmt.model.dto.ProductDataChannelResponse;
 import cn.skylark.aiot_service.iot.mgmt.model.dto.UpdateDeviceRequest;
 import cn.skylark.aiot_service.iot.mgmt.model.dto.UpdateProductDataChannelRequest;
 import cn.skylark.aiot_service.iot.mgmt.service.DeviceService;
+import cn.skylark.web.common.Ret;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,113 +40,116 @@ public class DeviceController {
   }
 
   @PostMapping
-  public DeviceResponse create(@PathVariable("productKey") String productKey,
+  public Ret<DeviceResponse> create(@PathVariable("productKey") String productKey,
                                @Validated @RequestBody CreateDeviceRequest request) {
-    return deviceService.create(productKey, request);
+    return Ret.data(deviceService.create(productKey, request));
   }
 
   @GetMapping
-  public List<DeviceResponse> list(@PathVariable("productKey") String productKey) {
-    return deviceService.list(productKey);
+  public Ret<List<DeviceResponse>> list(@PathVariable("productKey") String productKey) {
+    return Ret.data(deviceService.list(productKey));
   }
 
   @GetMapping("/{deviceKey}")
-  public DeviceResponse get(@PathVariable("productKey") String productKey,
+  public Ret<DeviceResponse> get(@PathVariable("productKey") String productKey,
                             @PathVariable("deviceKey") String deviceKey) {
-    return deviceService.get(productKey, deviceKey);
+    return Ret.data(deviceService.get(productKey, deviceKey));
   }
 
   @PutMapping("/{deviceKey}")
-  public DeviceResponse update(@PathVariable("productKey") String productKey,
+  public Ret<DeviceResponse> update(@PathVariable("productKey") String productKey,
                                @PathVariable("deviceKey") String deviceKey,
                                @Validated @RequestBody UpdateDeviceRequest request) {
-    return deviceService.update(productKey, deviceKey, request);
+    return Ret.data(deviceService.update(productKey, deviceKey, request));
   }
 
   @PatchMapping("/{deviceKey}/enable")
-  public DeviceResponse enable(@PathVariable("productKey") String productKey,
+  public Ret<DeviceResponse> enable(@PathVariable("productKey") String productKey,
                                @PathVariable("deviceKey") String deviceKey) {
-    return deviceService.enable(productKey, deviceKey);
+    return Ret.data(deviceService.enable(productKey, deviceKey));
   }
 
   @PatchMapping("/{deviceKey}/disable")
-  public DeviceResponse disable(@PathVariable("productKey") String productKey,
+  public Ret<DeviceResponse> disable(@PathVariable("productKey") String productKey,
                                 @PathVariable("deviceKey") String deviceKey) {
-    return deviceService.disable(productKey, deviceKey);
+    return Ret.data(deviceService.disable(productKey, deviceKey));
   }
 
   @PostMapping("/{deviceKey}/reset-secret")
-  public DeviceResponse resetSecret(@PathVariable("productKey") String productKey,
+  public Ret<DeviceResponse> resetSecret(@PathVariable("productKey") String productKey,
                                     @PathVariable("deviceKey") String deviceKey) {
-    return deviceService.resetSecret(productKey, deviceKey);
+    return Ret.data(deviceService.resetSecret(productKey, deviceKey));
   }
 
   @GetMapping("/{deviceKey}/data-channels")
-  public List<ProductDataChannelResponse> listDataChannels(@PathVariable("productKey") String productKey,
+  public Ret<List<ProductDataChannelResponse>> listDataChannels(@PathVariable("productKey") String productKey,
                                                            @PathVariable("deviceKey") String deviceKey) {
-    return deviceService.listDataChannels(productKey, deviceKey);
+    return Ret.data(deviceService.listDataChannels(productKey, deviceKey));
   }
 
   @GetMapping("/{deviceKey}/current-properties")
-  public List<DeviceCurrentPropertyResponse> listCurrentProperties(@PathVariable("productKey") String productKey,
+  public Ret<List<DeviceCurrentPropertyResponse>> listCurrentProperties(@PathVariable("productKey") String productKey,
                                                                    @PathVariable("deviceKey") String deviceKey) {
-    return deviceService.listCurrentProperties(productKey, deviceKey);
+    return Ret.data(deviceService.listCurrentProperties(productKey, deviceKey));
   }
 
   @PatchMapping("/{deviceKey}/data-channels/{id}")
-  public void updateDataChannel(@PathVariable("productKey") String productKey,
+  public Ret<Void> updateDataChannel(@PathVariable("productKey") String productKey,
                                 @PathVariable("deviceKey") String deviceKey,
                                 @PathVariable("id") Long id,
                                 @Validated @RequestBody UpdateProductDataChannelRequest request) {
     deviceService.updateDataChannel(productKey, deviceKey, id, request);
+    return Ret.ok();
   }
 
   @GetMapping("/{deviceKey}/property-records")
-  public DevicePropertyRecordPageResponse listPropertyRecords(@PathVariable("productKey") String productKey,
+  public Ret<DevicePropertyRecordPageResponse> listPropertyRecords(@PathVariable("productKey") String productKey,
                                                               @PathVariable("deviceKey") String deviceKey,
                                                               @ModelAttribute DeviceRecordPageQuery query) {
-    return deviceService.listPropertyRecords(productKey, deviceKey, query);
+    return Ret.data(deviceService.listPropertyRecords(productKey, deviceKey, query));
   }
 
   @GetMapping("/{deviceKey}/property-records/{propertyIdentifier}/latest")
-  public DevicePropertyRecordResponse getLatestPropertyRecord(@PathVariable("productKey") String productKey,
+  public Ret<DevicePropertyRecordResponse> getLatestPropertyRecord(@PathVariable("productKey") String productKey,
                                                               @PathVariable("deviceKey") String deviceKey,
                                                               @PathVariable("propertyIdentifier") String propertyIdentifier) {
-    return deviceService.getLatestPropertyValue(productKey, deviceKey, propertyIdentifier);
+    return Ret.data(deviceService.getLatestPropertyValue(productKey, deviceKey, propertyIdentifier));
   }
 
   @GetMapping("/{deviceKey}/event-records")
-  public DeviceEventRecordPageResponse listEventRecords(@PathVariable("productKey") String productKey,
+  public Ret<DeviceEventRecordPageResponse> listEventRecords(@PathVariable("productKey") String productKey,
                                                         @PathVariable("deviceKey") String deviceKey,
                                                         @ModelAttribute DeviceRecordPageQuery query) {
-    return deviceService.listEventRecords(productKey, deviceKey, query);
+    return Ret.data(deviceService.listEventRecords(productKey, deviceKey, query));
   }
 
   @GetMapping("/{deviceKey}/service-records")
-  public DeviceServiceRecordPageResponse listServiceRecords(@PathVariable("productKey") String productKey,
+  public Ret<DeviceServiceRecordPageResponse> listServiceRecords(@PathVariable("productKey") String productKey,
                                                             @PathVariable("deviceKey") String deviceKey,
                                                             @ModelAttribute DeviceRecordPageQuery query) {
-    return deviceService.listServiceRecords(productKey, deviceKey, query);
+    return Ret.data(deviceService.listServiceRecords(productKey, deviceKey, query));
   }
 
   @GetMapping("/{deviceKey}/connect-records")
-  public DeviceConnectRecordPageResponse listConnectRecords(@PathVariable("productKey") String productKey,
+  public Ret<DeviceConnectRecordPageResponse> listConnectRecords(@PathVariable("productKey") String productKey,
                                                             @PathVariable("deviceKey") String deviceKey,
                                                             @ModelAttribute DeviceRecordPageQuery query) {
-    return deviceService.listConnectRecords(productKey, deviceKey, query);
+    return Ret.data(deviceService.listConnectRecords(productKey, deviceKey, query));
   }
 
   @PostMapping("/{deviceKey}/connect-records")
-  public void createConnectRecord(@PathVariable("productKey") String productKey,
+  public Ret<Void> createConnectRecord(@PathVariable("productKey") String productKey,
                                   @PathVariable("deviceKey") String deviceKey,
                                   @Validated @RequestBody CreateDeviceConnectRecordRequest request) {
     deviceService.createConnectRecord(productKey, deviceKey, request);
+    return Ret.ok();
   }
 
   @DeleteMapping("/{deviceKey}")
-  public void delete(@PathVariable("productKey") String productKey,
+  public Ret<Void> delete(@PathVariable("productKey") String productKey,
                      @PathVariable("deviceKey") String deviceKey) {
     deviceService.delete(productKey, deviceKey);
+    return Ret.ok();
   }
 }
 

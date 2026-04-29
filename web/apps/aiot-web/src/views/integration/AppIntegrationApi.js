@@ -1,6 +1,6 @@
 import http from '@/api/http'
 
-const PREFIX = '/aiot-service/mgmt/integration'
+const PREFIX = '/aiot-service/appint'
 
 export function listEventTypes() {
   return http.get(`${PREFIX}/event-types`)

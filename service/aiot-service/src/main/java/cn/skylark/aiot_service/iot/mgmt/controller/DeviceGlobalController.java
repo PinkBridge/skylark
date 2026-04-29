@@ -7,6 +7,7 @@ import cn.skylark.aiot_service.iot.mgmt.model.dto.DeviceResponse;
 import cn.skylark.aiot_service.iot.mgmt.service.DeviceExcelImportService;
 import cn.skylark.aiot_service.iot.mgmt.service.DeviceService;
 import cn.skylark.aiot_service.iot.mgmt.service.MgmtException;
+import cn.skylark.web.common.Ret;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -32,13 +33,13 @@ public class DeviceGlobalController {
   }
 
   @GetMapping("/api/aiot-service/mgmt/devices")
-  public List<DeviceResponse> listAll() {
-    return deviceService.listAll();
+  public Ret<List<DeviceResponse>> listAll() {
+    return Ret.data(deviceService.listAll());
   }
 
   @GetMapping("/api/aiot-service/mgmt/devices/page")
-  public DevicePageResponse listPage(@ModelAttribute DevicePageQuery query) {
-    return deviceService.listAllPage(query);
+  public Ret<DevicePageResponse> listPage(@ModelAttribute DevicePageQuery query) {
+    return Ret.data(deviceService.listAllPage(query));
   }
 
   @GetMapping("/api/aiot-service/mgmt/devices/import-template")
@@ -57,8 +58,8 @@ public class DeviceGlobalController {
   }
 
   @PostMapping(value = "/api/aiot-service/mgmt/devices/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public DeviceImportResult importDevices(@RequestParam("file") MultipartFile file) {
-    return deviceExcelImportService.importFromExcel(file);
+  public Ret<DeviceImportResult> importDevices(@RequestParam("file") MultipartFile file) {
+    return Ret.data(deviceExcelImportService.importFromExcel(file));
   }
 }
 

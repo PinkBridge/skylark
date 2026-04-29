@@ -4,6 +4,7 @@ import cn.skylark.aiot_service.iot.appint.model.NormalizedEvent;
 import cn.skylark.aiot_service.iot.appint.model.OutboundDispatchRow;
 import cn.skylark.aiot_service.iot.appint.mapper.IotOutboundDeliveryMapper;
 import cn.skylark.aiot_service.iot.appint.mapper.IotOutboundSubscriptionMapper;
+import cn.skylark.aiot_service.iot.mgmt.mapper.DeviceGroupRelMapper;
 import cn.skylark.aiot_service.iot.appint.entity.IotOutboundDeliveryEntity;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -27,16 +28,22 @@ public class OutboundDispatchService {
   private final IotOutboundSubscriptionMapper subscriptionMapper;
   private final IotOutboundDeliveryMapper deliveryMapper;
   private final WebhookOutboundClient webhookOutboundClient;
+  private final MqttOutboundClient mqttOutboundClient;
   private final ObjectMapper objectMapper;
+  private final DeviceGroupRelMapper deviceGroupRelMapper;
 
   public OutboundDispatchService(IotOutboundSubscriptionMapper subscriptionMapper,
                                  IotOutboundDeliveryMapper deliveryMapper,
                                  WebhookOutboundClient webhookOutboundClient,
-                                 ObjectMapper objectMapper) {
+                                  MqttOutboundClient mqttOutboundClient,
+                                  ObjectMapper objectMapper,
+                                  DeviceGroupRelMapper deviceGroupRelMapper) {
     this.subscriptionMapper = subscriptionMapper;
     this.deliveryMapper = deliveryMapper;
     this.webhookOutboundClient = webhookOutboundClient;
+    this.mqttOutboundClient = mqttOutboundClient;
     this.objectMapper = objectMapper;
+    this.deviceGroupRelMapper = deviceGroupRelMapper;
   }
 
   public void dispatch(NormalizedEvent event) {
@@ -55,18 +62,25 @@ public class OutboundDispatchService {
       if (!OutboundSubscriptionMatcher.matchEventType(row.getEventTypes(), event.getEventType(), objectMapper)) {
         continue;
       }
-      if (!OutboundSubscriptionMatcher.matchFilter(row.getFilterJson(), event, objectMapper)) {
+      if (!OutboundSubscriptionMatcher.matchFilter(row.getFilterJson(), event, objectMapper, deviceGroupRelMapper)) {
         continue;
       }
-      if (!"WEBHOOK".equalsIgnoreCase(safe(row.getChannelType()))) {
-        continue;
+      String ct = safe(row.getChannelType()).toUpperCase();
+      if ("WEBHOOK".equals(ct)) {
+        WebhookChannelConfig cfg = WebhookChannelConfig.parse(row.getChannelConfigJson(), objectMapper);
+        if (!cfg.isValid()) {
+          log.warn("integration webhook skip: invalid channel config channelId={}", row.getChannelId());
+          continue;
+        }
+        sendWebhookWithDelivery(event, row, body, cfg);
+      } else if ("MQTT".equals(ct)) {
+        MqttChannelConfig cfg = MqttChannelConfig.parse(row.getChannelConfigJson(), objectMapper);
+        if (!cfg.isValid()) {
+          log.warn("integration mqtt skip: invalid channel config channelId={}", row.getChannelId());
+          continue;
+        }
+        sendMqttWithDelivery(event, row, body, cfg);
       }
-      WebhookChannelConfig cfg = WebhookChannelConfig.parse(row.getChannelConfigJson(), objectMapper);
-      if (!cfg.isValid()) {
-        log.warn("integration webhook skip: invalid channel config channelId={}", row.getChannelId());
-        continue;
-      }
-      sendWithDelivery(event, row, body, cfg);
     }
   }
 
@@ -84,6 +98,18 @@ public class OutboundDispatchService {
     }
     String body = envelopeJson(sampleEvent);
     return webhookOutboundClient.postJson(cfg.url, body, cfg.signingSecret, cfg.readTimeoutMs);
+  }
+
+  public MqttOutboundClient.PublishResult dispatchTestMqtt(String channelType, String configJson, NormalizedEvent sampleEvent) {
+    if (!"MQTT".equalsIgnoreCase(safe(channelType))) {
+      return MqttOutboundClient.PublishResult.failure("only MQTT supported in this test");
+    }
+    MqttChannelConfig cfg = MqttChannelConfig.parse(configJson, objectMapper);
+    if (!cfg.isValid()) {
+      return MqttOutboundClient.PublishResult.failure("invalid mqtt config (need brokerUrl/topic)");
+    }
+    String body = envelopeJson(sampleEvent);
+    return mqttOutboundClient.publishJson(cfg.brokerUrl, cfg.clientId, cfg.username, cfg.password, cfg.topic, cfg.qos, body);
   }
 
   static String envelopeJson(NormalizedEvent event, ObjectMapper objectMapper) {
@@ -107,7 +133,7 @@ public class OutboundDispatchService {
     return envelopeJson(event, objectMapper);
   }
 
-  private void sendWithDelivery(NormalizedEvent event, OutboundDispatchRow row, String body, WebhookChannelConfig cfg) {
+  private void sendWebhookWithDelivery(NormalizedEvent event, OutboundDispatchRow row, String body, WebhookChannelConfig cfg) {
     String snapshot = truncate(body, MAX_SNAPSHOT_CHARS);
     IotOutboundDeliveryEntity d = new IotOutboundDeliveryEntity();
     d.setTenantId(event.getTenantId());
@@ -131,6 +157,37 @@ public class OutboundDispatchService {
     } else {
       d.setStatus("failed");
       d.setHttpStatus(result.getHttpStatus() > 0 ? result.getHttpStatus() : null);
+      d.setLastError(result.getError());
+      d.setNextRetryAt(LocalDateTime.now(ZoneId.systemDefault()).plusSeconds(retryDelaySeconds(1)));
+    }
+    deliveryMapper.update(d);
+  }
+
+  private void sendMqttWithDelivery(NormalizedEvent event, OutboundDispatchRow row, String body, MqttChannelConfig cfg) {
+    String snapshot = truncate(body, MAX_SNAPSHOT_CHARS);
+    IotOutboundDeliveryEntity d = new IotOutboundDeliveryEntity();
+    d.setTenantId(event.getTenantId());
+    d.setOrgId(event.getOrgId());
+    d.setEventId(event.getEventId());
+    d.setEventType(event.getEventType());
+    d.setSubscriptionId(row.getSubscriptionId());
+    d.setChannelId(row.getChannelId());
+    d.setStatus("pending");
+    d.setAttempts(0);
+    d.setPayloadSnapshot(snapshot);
+    deliveryMapper.insert(d);
+
+    MqttOutboundClient.PublishResult result =
+        mqttOutboundClient.publishJson(cfg.brokerUrl, cfg.clientId, cfg.username, cfg.password, cfg.topic, cfg.qos, body);
+    d.setAttempts(1);
+    if (result.isOk()) {
+      d.setStatus("success");
+      d.setHttpStatus(null);
+      d.setLastError(null);
+      d.setNextRetryAt(null);
+    } else {
+      d.setStatus("failed");
+      d.setHttpStatus(null);
       d.setLastError(result.getError());
       d.setNextRetryAt(LocalDateTime.now(ZoneId.systemDefault()).plusSeconds(retryDelaySeconds(1)));
     }
@@ -188,6 +245,66 @@ public class OutboundDispatchService {
         return new WebhookChannelConfig(url, secret, readMs);
       } catch (Exception e) {
         return new WebhookChannelConfig("", "", 30_000);
+      }
+    }
+
+    private static String text(JsonNode n, String field) {
+      JsonNode v = n.get(field);
+      if (v != null && v.isTextual()) {
+        String t = v.asText();
+        return StringUtils.hasText(t) ? t.trim() : "";
+      }
+      return "";
+    }
+
+    private static String firstText(JsonNode n, String... fields) {
+      for (String f : fields) {
+        String t = text(n, f);
+        if (StringUtils.hasText(t)) {
+          return t;
+        }
+      }
+      return "";
+    }
+  }
+
+  public static final class MqttChannelConfig {
+    final String brokerUrl;
+    final String topic;
+    final String clientId;
+    final String username;
+    final String password;
+    final int qos;
+
+    MqttChannelConfig(String brokerUrl, String topic, String clientId, String username, String password, int qos) {
+      this.brokerUrl = brokerUrl;
+      this.topic = topic;
+      this.clientId = clientId;
+      this.username = username;
+      this.password = password;
+      this.qos = qos;
+    }
+
+    boolean isValid() {
+      return StringUtils.hasText(brokerUrl) && StringUtils.hasText(topic);
+    }
+
+    static MqttChannelConfig parse(String configJson, ObjectMapper mapper) {
+      if (!StringUtils.hasText(configJson)) {
+        return new MqttChannelConfig("", "", "", "", "", 0);
+      }
+      try {
+        JsonNode n = mapper.readTree(configJson);
+        String broker = firstText(n, "brokerUrl", "broker", "url", "server");
+        String topic = text(n, "topic");
+        String clientId = firstText(n, "clientId", "client_id");
+        String username = firstText(n, "username", "user");
+        String password = firstText(n, "password", "pass");
+        int qos = n.path("qos").asInt(0);
+        int q = Math.max(0, Math.min(qos, 2));
+        return new MqttChannelConfig(broker, topic, clientId, username, password, q);
+      } catch (Exception e) {
+        return new MqttChannelConfig("", "", "", "", "", 0);
       }
     }
 

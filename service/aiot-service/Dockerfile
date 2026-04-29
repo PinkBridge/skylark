@@ -10,7 +10,7 @@ ARG SERVICE_MODULE=aiot-service
 COPY service/pom.xml service/pom.xml
 COPY service ./service
 RUN --mount=type=cache,target=/root/.m2 \
-    mvn -B -q -DskipTests -f service/pom.xml -pl ${SERVICE_MODULE} -am package
+    mvn -B -q -DskipTests -f service/pom.xml -pl ${SERVICE_MODULE} -am clean package
 
 FROM ${JRE_IMAGE}
 WORKDIR /app

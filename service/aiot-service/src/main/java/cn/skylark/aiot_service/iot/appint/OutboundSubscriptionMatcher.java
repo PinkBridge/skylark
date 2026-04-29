@@ -2,6 +2,7 @@ package cn.skylark.aiot_service.iot.appint;
 
 import cn.skylark.aiot_service.iot.appint.model.NormalizedEvent;
 import cn.skylark.aiot_service.iot.appint.model.OutboundDispatchRow;
+import cn.skylark.aiot_service.iot.mgmt.mapper.DeviceGroupRelMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.util.StringUtils;
@@ -12,11 +13,7 @@ final class OutboundSubscriptionMatcher {
   private OutboundSubscriptionMatcher() {}
 
   static boolean matchOrg(OutboundDispatchRow row, NormalizedEvent event) {
-    Long subOrg = row.getSubscriptionOrgId();
-    if (subOrg == null) {
-      return true;
-    }
-    return event.getOrgId() != null && subOrg.equals(event.getOrgId());
+    return true;
   }
 
   static boolean matchEventType(String eventTypesJson, String eventType, ObjectMapper mapper) {
@@ -40,6 +37,13 @@ final class OutboundSubscriptionMatcher {
   }
 
   static boolean matchFilter(String filterJson, NormalizedEvent event, ObjectMapper mapper) {
+    return matchFilter(filterJson, event, mapper, null);
+  }
+
+  static boolean matchFilter(String filterJson,
+                              NormalizedEvent event,
+                              ObjectMapper mapper,
+                              DeviceGroupRelMapper deviceGroupRelMapper) {
     if (!StringUtils.hasText(filterJson)) {
       return true;
     }
@@ -50,6 +54,19 @@ final class OutboundSubscriptionMatcher {
       }
       String pk = subject(event, "productKey");
       String dk = subject(event, "deviceKey");
+
+      // Optional extra condition: device group membership.
+      // If provided, subscription will only match events whose subject device is in that group.
+      String deviceGroupKey = text(f, "deviceGroupKey");
+      if (StringUtils.hasText(deviceGroupKey)) {
+        if (event.getTenantId() == null || pk == null || dk == null || deviceGroupRelMapper == null) {
+          return false;
+        }
+        if (!deviceGroupRelMapper.existsByGroupKeyAndDevice(event.getTenantId(), deviceGroupKey, pk, dk)) {
+          return false;
+        }
+      }
+
       String pkPrefix = text(f, "productKeyPrefix");
       if (StringUtils.hasText(pkPrefix) && (pk == null || !pk.startsWith(pkPrefix))) {
         return false;

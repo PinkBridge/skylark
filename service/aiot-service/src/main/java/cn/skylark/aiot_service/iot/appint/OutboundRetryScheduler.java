@@ -21,6 +21,7 @@ public class OutboundRetryScheduler {
   private final IotOutboundDeliveryMapper deliveryMapper;
   private final IotOutboundChannelMapper channelMapper;
   private final WebhookOutboundClient webhookOutboundClient;
+  private final MqttOutboundClient mqttOutboundClient;
   private final ObjectMapper objectMapper;
 
   @Value("${iot.appint.retry.max-attempts:8}")
@@ -29,10 +30,12 @@ public class OutboundRetryScheduler {
   public OutboundRetryScheduler(IotOutboundDeliveryMapper deliveryMapper,
                                 IotOutboundChannelMapper channelMapper,
                                 WebhookOutboundClient webhookOutboundClient,
+                                MqttOutboundClient mqttOutboundClient,
                                 ObjectMapper objectMapper) {
     this.deliveryMapper = deliveryMapper;
     this.channelMapper = channelMapper;
     this.webhookOutboundClient = webhookOutboundClient;
+    this.mqttOutboundClient = mqttOutboundClient;
     this.objectMapper = objectMapper;
   }
 
@@ -56,30 +59,50 @@ public class OutboundRetryScheduler {
     if (ch == null || ch.getEnabled() == null || ch.getEnabled() == 0) {
       return;
     }
-    if (!"WEBHOOK".equalsIgnoreCase(ch.getType() == null ? "" : ch.getType().trim())) {
-      return;
-    }
     if (!StringUtils.hasText(d.getPayloadSnapshot())) {
       return;
     }
-    OutboundDispatchService.WebhookChannelConfig cfg =
-        OutboundDispatchService.WebhookChannelConfig.parse(ch.getConfigJson(), objectMapper);
-    if (!cfg.isValid()) {
+    int prev = d.getAttempts() == null ? 0 : d.getAttempts();
+    String type = ch.getType() == null ? "" : ch.getType().trim();
+    boolean ok;
+    Integer httpStatus = null;
+    String err = null;
+
+    if ("WEBHOOK".equalsIgnoreCase(type)) {
+      OutboundDispatchService.WebhookChannelConfig cfg =
+          OutboundDispatchService.WebhookChannelConfig.parse(ch.getConfigJson(), objectMapper);
+      if (!cfg.isValid()) {
+        return;
+      }
+      WebhookOutboundClient.WebhookSendResult result =
+          webhookOutboundClient.postJson(cfg.url, d.getPayloadSnapshot(), cfg.signingSecret, cfg.readTimeoutMs);
+      ok = result.isOk();
+      httpStatus = result.getHttpStatus() > 0 ? result.getHttpStatus() : null;
+      err = result.getError();
+    } else if ("MQTT".equalsIgnoreCase(type)) {
+      OutboundDispatchService.MqttChannelConfig cfg =
+          OutboundDispatchService.MqttChannelConfig.parse(ch.getConfigJson(), objectMapper);
+      if (!cfg.isValid()) {
+        return;
+      }
+      MqttOutboundClient.PublishResult result =
+          mqttOutboundClient.publishJson(cfg.brokerUrl, cfg.clientId, cfg.username, cfg.password, cfg.topic, cfg.qos, d.getPayloadSnapshot());
+      ok = result.isOk();
+      err = result.getError();
+    } else {
       return;
     }
-    int prev = d.getAttempts() == null ? 0 : d.getAttempts();
-    WebhookOutboundClient.WebhookSendResult result =
-        webhookOutboundClient.postJson(cfg.url, d.getPayloadSnapshot(), cfg.signingSecret, cfg.readTimeoutMs);
+
     int nextAttempt = prev + 1;
     d.setAttempts(nextAttempt);
-    if (result.isOk()) {
+    if (ok) {
       d.setStatus("success");
-      d.setHttpStatus(result.getHttpStatus());
+      d.setHttpStatus(httpStatus);
       d.setLastError(null);
       d.setNextRetryAt(null);
     } else {
-      d.setHttpStatus(result.getHttpStatus() > 0 ? result.getHttpStatus() : null);
-      d.setLastError(result.getError());
+      d.setHttpStatus(httpStatus);
+      d.setLastError(err);
       if (nextAttempt >= maxAttempts) {
         d.setStatus("dead");
         d.setNextRetryAt(null);

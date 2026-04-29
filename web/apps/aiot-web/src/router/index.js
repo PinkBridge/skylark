@@ -49,6 +49,10 @@ const routes = [
         meta: { requiresAuth: true }
       },
       {
+        path: '/iot/enablement',
+        redirect: '/iot/integration'
+      },
+      {
         path: '/iot/integration',
         name: 'IotIntegration',
         component: () => import('@/views/integration/IntegrationConsole.vue'),

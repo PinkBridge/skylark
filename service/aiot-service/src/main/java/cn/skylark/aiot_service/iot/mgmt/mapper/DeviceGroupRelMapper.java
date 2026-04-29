@@ -31,5 +31,13 @@ public interface DeviceGroupRelMapper {
   long countByGroupKey(@Param("groupKey") String groupKey);
 
   List<DeviceGroupMemberCount> countMembersByGroupKeys(@Param("groupKeys") List<String> groupKeys);
+
+  /**
+   * Tenant-scoped membership check for fast dispatch filtering.
+   */
+  boolean existsByGroupKeyAndDevice(@Param("tenantId") Long tenantId,
+                                     @Param("groupKey") String groupKey,
+                                     @Param("productKey") String productKey,
+                                     @Param("deviceKey") String deviceKey);
 }
 

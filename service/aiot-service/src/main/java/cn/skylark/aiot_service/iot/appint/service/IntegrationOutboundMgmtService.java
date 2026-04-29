@@ -1,6 +1,7 @@
 package cn.skylark.aiot_service.iot.appint.service;
 
 import cn.skylark.aiot_service.iot.appint.ConfigSecretMasker;
+import cn.skylark.aiot_service.iot.appint.MqttOutboundClient;
 import cn.skylark.aiot_service.iot.appint.OutboundDispatchService;
 import cn.skylark.aiot_service.iot.appint.WebhookOutboundClient;
 import cn.skylark.aiot_service.iot.appint.model.IotIntegrationEventType;
@@ -88,11 +89,12 @@ public class IntegrationOutboundMgmtService {
   }
 
   public OutboundChannelResponse createChannel(OutboundChannelCreateRequest req) {
+    String type = normalizeChannelType(req.getType());
     IotOutboundChannelEntity e = new IotOutboundChannelEntity();
     e.setTenantId(AiotDataDomainSupport.requireTenantId());
-    e.setOrgId(AiotDataDomainSupport.currentOrgId());
+    e.setOrgId(null);
     e.setName(req.getName().trim());
-    e.setType(req.getType().trim().toUpperCase());
+    e.setType(type);
     e.setEnabled(req.getEnabled() ? 1 : 0);
     e.setConfigJson(req.getConfigJson());
     channelMapper.insert(e);
@@ -105,7 +107,7 @@ public class IntegrationOutboundMgmtService {
     if (e == null) {
       throw new MgmtException(HttpStatus.NOT_FOUND, "channel not found");
     }
-    return toChannelResponse(e, true);
+    return toChannelResponse(e, false);
   }
 
   public OutboundChannelResponse updateChannel(Long id, OutboundChannelUpdateRequest req) {
@@ -133,20 +135,38 @@ public class IntegrationOutboundMgmtService {
     if (e == null) {
       throw new MgmtException(HttpStatus.NOT_FOUND, "channel not found");
     }
-    NormalizedEvent sample = sampleEvent(AiotDataDomainSupport.requireTenantId(), AiotDataDomainSupport.currentOrgId());
-    WebhookOutboundClient.WebhookSendResult r =
-        outboundDispatchService.dispatchTestWebhook(e.getId(), e.getType(), e.getConfigJson(), sample);
+    NormalizedEvent sample = sampleEvent(AiotDataDomainSupport.requireTenantId(), null);
     TestWebhookResponse resp = new TestWebhookResponse();
-    resp.setOk(r.isOk());
-    resp.setHttpStatus(r.getHttpStatus() > 0 ? r.getHttpStatus() : null);
-    resp.setError(r.getError());
+    if ("WEBHOOK".equalsIgnoreCase(e.getType())) {
+      WebhookOutboundClient.WebhookSendResult r =
+          outboundDispatchService.dispatchTestWebhook(e.getId(), e.getType(), e.getConfigJson(), sample);
+      resp.setOk(r.isOk());
+      resp.setHttpStatus(r.getHttpStatus() > 0 ? r.getHttpStatus() : null);
+      resp.setError(r.getError());
+    } else if ("MQTT".equalsIgnoreCase(e.getType())) {
+      MqttOutboundClient.PublishResult r =
+          outboundDispatchService.dispatchTestMqtt(e.getType(), e.getConfigJson(), sample);
+      resp.setOk(r.isOk());
+      resp.setHttpStatus(null);
+      resp.setError(r.getError());
+    } else {
+      throw new MgmtException(HttpStatus.BAD_REQUEST, "channel type not supported");
+    }
     return resp;
   }
 
-  public OutboundSubscriptionPageResponse listSubscriptions(OutboundSubscriptionPageQuery query) {
-    if (query.getChannelId() == null) {
-      throw new MgmtException(HttpStatus.BAD_REQUEST, "channelId required");
+  private String normalizeChannelType(String rawType) {
+    if (!StringUtils.hasText(rawType)) {
+      throw new MgmtException(HttpStatus.BAD_REQUEST, "channel type required");
     }
+    String type = rawType.trim().toUpperCase();
+    if (!"WEBHOOK".equals(type) && !"MQTT".equals(type)) {
+      throw new MgmtException(HttpStatus.BAD_REQUEST, "channel type not supported");
+    }
+    return type;
+  }
+
+  public OutboundSubscriptionPageResponse listSubscriptions(OutboundSubscriptionPageQuery query) {
     int pageNum = query.getPageNum() == null || query.getPageNum() < 1 ? 1 : query.getPageNum();
     int pageSize = query.getPageSize() == null || query.getPageSize() < 1 ? 20 : Math.min(query.getPageSize(), 100);
     int offset = (pageNum - 1) * pageSize;
@@ -172,7 +192,7 @@ public class IntegrationOutboundMgmtService {
     }
     IotOutboundSubscriptionEntity e = new IotOutboundSubscriptionEntity();
     e.setTenantId(AiotDataDomainSupport.requireTenantId());
-    e.setOrgId(AiotDataDomainSupport.currentOrgId());
+    e.setOrgId(null);
     e.setChannelId(req.getChannelId());
     e.setName(req.getName() == null ? null : req.getName().trim());
     e.setEnabled(req.getEnabled() ? 1 : 0);

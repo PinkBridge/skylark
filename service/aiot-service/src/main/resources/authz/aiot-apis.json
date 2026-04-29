@@ -45,20 +45,20 @@
     { "method": "POST", "path": "/api/aiot-service/mgmt/device-groups/**/devices", "permlabel": "iot.device-groups.manage-devices", "moduleKey": "aiot.device-group" },
     { "method": "DELETE", "path": "/api/aiot-service/mgmt/device-groups/**/devices/**/**", "permlabel": "iot.device-groups.manage-devices", "moduleKey": "aiot.device-group" },
 
-    { "method": "GET", "path": "/api/aiot-service/mgmt/integration/event-types", "permlabel": "iot.integration.detail", "moduleKey": "aiot.integration" },
-    { "method": "GET", "path": "/api/aiot-service/mgmt/integration/channels", "permlabel": "iot.integration.detail", "moduleKey": "aiot.integration" },
-    { "method": "POST", "path": "/api/aiot-service/mgmt/integration/channels", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" },
-    { "method": "GET", "path": "/api/aiot-service/mgmt/integration/channels/**", "permlabel": "iot.integration.detail", "moduleKey": "aiot.integration" },
-    { "method": "PUT", "path": "/api/aiot-service/mgmt/integration/channels/**", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" },
-    { "method": "DELETE", "path": "/api/aiot-service/mgmt/integration/channels/**", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" },
-    { "method": "POST", "path": "/api/aiot-service/mgmt/integration/channels/**/test", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" },
-    { "method": "GET", "path": "/api/aiot-service/mgmt/integration/subscriptions", "permlabel": "iot.integration.detail", "moduleKey": "aiot.integration" },
-    { "method": "POST", "path": "/api/aiot-service/mgmt/integration/subscriptions", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" },
-    { "method": "GET", "path": "/api/aiot-service/mgmt/integration/subscriptions/**", "permlabel": "iot.integration.detail", "moduleKey": "aiot.integration" },
-    { "method": "PUT", "path": "/api/aiot-service/mgmt/integration/subscriptions/**", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" },
-    { "method": "DELETE", "path": "/api/aiot-service/mgmt/integration/subscriptions/**", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" },
-    { "method": "GET", "path": "/api/aiot-service/mgmt/integration/deliveries", "permlabel": "iot.integration.detail", "moduleKey": "aiot.integration" },
-    { "method": "POST", "path": "/api/aiot-service/mgmt/integration/deliveries/**/retry", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" }
+    { "method": "GET", "path": "/api/aiot-service/appint/event-types", "permlabel": "iot.integration.detail", "moduleKey": "aiot.integration" },
+    { "method": "GET", "path": "/api/aiot-service/appint/channels", "permlabel": "iot.integration.detail", "moduleKey": "aiot.integration" },
+    { "method": "POST", "path": "/api/aiot-service/appint/channels", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" },
+    { "method": "GET", "path": "/api/aiot-service/appint/channels/**", "permlabel": "iot.integration.detail", "moduleKey": "aiot.integration" },
+    { "method": "PUT", "path": "/api/aiot-service/appint/channels/**", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" },
+    { "method": "DELETE", "path": "/api/aiot-service/appint/channels/**", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" },
+    { "method": "POST", "path": "/api/aiot-service/appint/channels/**/test", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" },
+    { "method": "GET", "path": "/api/aiot-service/appint/subscriptions", "permlabel": "iot.integration.detail", "moduleKey": "aiot.integration" },
+    { "method": "POST", "path": "/api/aiot-service/appint/subscriptions", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" },
+    { "method": "GET", "path": "/api/aiot-service/appint/subscriptions/**", "permlabel": "iot.integration.detail", "moduleKey": "aiot.integration" },
+    { "method": "PUT", "path": "/api/aiot-service/appint/subscriptions/**", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" },
+    { "method": "DELETE", "path": "/api/aiot-service/appint/subscriptions/**", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" },
+    { "method": "GET", "path": "/api/aiot-service/appint/deliveries", "permlabel": "iot.integration.detail", "moduleKey": "aiot.integration" },
+    { "method": "POST", "path": "/api/aiot-service/appint/deliveries/**/retry", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" }
   ]
 }
 

@@ -8,6 +8,7 @@ import cn.skylark.aiot_service.iot.mgmt.model.dto.DeviceGroupResponse;
 import cn.skylark.aiot_service.iot.mgmt.model.dto.DeviceResponse;
 import cn.skylark.aiot_service.iot.mgmt.model.dto.UpdateDeviceGroupRequest;
 import cn.skylark.aiot_service.iot.mgmt.service.DeviceGroupService;
+import cn.skylark.web.common.Ret;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,47 +32,50 @@ public class DeviceGroupController {
   }
 
   @GetMapping
-  public DeviceGroupPageResponse list(@ModelAttribute DeviceGroupPageQuery query) {
-    return deviceGroupService.list(query);
+  public Ret<DeviceGroupPageResponse> list(@ModelAttribute DeviceGroupPageQuery query) {
+    return Ret.data(deviceGroupService.list(query));
   }
 
   @PostMapping
-  public DeviceGroupResponse create(@Validated @RequestBody CreateDeviceGroupRequest request) {
-    return deviceGroupService.create(request);
+  public Ret<DeviceGroupResponse> create(@Validated @RequestBody CreateDeviceGroupRequest request) {
+    return Ret.data(deviceGroupService.create(request));
   }
 
   @GetMapping("/{groupKey}")
-  public DeviceGroupResponse get(@PathVariable("groupKey") String groupKey) {
-    return deviceGroupService.get(groupKey);
+  public Ret<DeviceGroupResponse> get(@PathVariable("groupKey") String groupKey) {
+    return Ret.data(deviceGroupService.get(groupKey));
   }
 
   @PutMapping("/{groupKey}")
-  public DeviceGroupResponse update(@PathVariable("groupKey") String groupKey,
+  public Ret<DeviceGroupResponse> update(@PathVariable("groupKey") String groupKey,
                                     @Validated @RequestBody UpdateDeviceGroupRequest request) {
-    return deviceGroupService.update(groupKey, request);
+    return Ret.data(deviceGroupService.update(groupKey, request));
   }
 
   @DeleteMapping("/{groupKey}")
-  public void delete(@PathVariable("groupKey") String groupKey) {
+  public Ret<Void> delete(@PathVariable("groupKey") String groupKey) {
     deviceGroupService.delete(groupKey);
+    return Ret.ok();
   }
 
   @GetMapping("/{groupKey}/devices")
-  public List<DeviceResponse> listGroupDevices(@PathVariable("groupKey") String groupKey) {
-    return deviceGroupService.listGroupDevices(groupKey);
+  public Ret<List<DeviceResponse>> listGroupDevices(@PathVariable("groupKey") String groupKey) {
+    return Ret.data(deviceGroupService.listGroupDevices(groupKey));
   }
 
   @PostMapping("/{groupKey}/devices")
-  public void addDevices(@PathVariable("groupKey") String groupKey,
+  public Ret<Void> addDevices(@PathVariable("groupKey") String groupKey,
                          @Validated @RequestBody AddDevicesToGroupRequest request) {
     deviceGroupService.addDevices(groupKey, request);
+    return Ret.ok();
   }
 
   @DeleteMapping("/{groupKey}/devices/{productKey}/{deviceKey}")
-  public void removeDevice(@PathVariable("groupKey") String groupKey,
+  public Ret<Void> removeDevice(@PathVariable("groupKey") String groupKey,
                            @PathVariable("productKey") String productKey,
                            @PathVariable("deviceKey") String deviceKey) {
     deviceGroupService.removeDevice(groupKey, productKey, deviceKey);
+    return Ret.ok();
   }
 }
 

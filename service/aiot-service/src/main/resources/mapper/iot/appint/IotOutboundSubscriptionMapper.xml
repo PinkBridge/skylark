@@ -41,13 +41,20 @@
 
   <select id="listByChannel" resultMap="SubMap">
     SELECT * FROM iot_outbound_subscription
-    WHERE channel_id = #{channelId} AND is_delete = 0
+    WHERE is_delete = 0
+    <if test="channelId != null">
+      AND channel_id = #{channelId}
+    </if>
     ORDER BY id DESC
     LIMIT #{pageSize} OFFSET #{offset}
   </select>
 
   <select id="countByChannel" resultType="long">
-    SELECT COUNT(*) FROM iot_outbound_subscription WHERE channel_id = #{channelId} AND is_delete = 0
+    SELECT COUNT(*) FROM iot_outbound_subscription
+    WHERE is_delete = 0
+    <if test="channelId != null">
+      AND channel_id = #{channelId}
+    </if>
   </select>
 
   <select id="listDispatchRows" resultMap="DispatchRowMap">

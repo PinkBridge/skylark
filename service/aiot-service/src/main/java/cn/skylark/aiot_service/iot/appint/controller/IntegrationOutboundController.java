@@ -14,6 +14,7 @@ import cn.skylark.aiot_service.iot.appint.dto.OutboundSubscriptionResponse;
 import cn.skylark.aiot_service.iot.appint.dto.OutboundSubscriptionUpdateRequest;
 import cn.skylark.aiot_service.iot.appint.dto.TestWebhookResponse;
 import cn.skylark.aiot_service.iot.appint.service.IntegrationOutboundMgmtService;
+import cn.skylark.web.common.Ret;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/aiot-service/mgmt/integration")
+@RequestMapping("/api/aiot-service/appint")
 public class IntegrationOutboundController {
 
   private final IntegrationOutboundMgmtService integrationOutboundMgmtService;
@@ -38,74 +39,77 @@ public class IntegrationOutboundController {
   }
 
   @GetMapping("/event-types")
-  public List<String> eventTypes() {
-    return integrationOutboundMgmtService.listEventTypes();
+  public Ret<List<String>> eventTypes() {
+    return Ret.data(integrationOutboundMgmtService.listEventTypes());
   }
 
   @GetMapping("/channels")
-  public OutboundChannelPageResponse listChannels(@ModelAttribute OutboundChannelPageQuery query) {
-    return integrationOutboundMgmtService.listChannels(query);
+  public Ret<OutboundChannelPageResponse> listChannels(@ModelAttribute OutboundChannelPageQuery query) {
+    return Ret.data(integrationOutboundMgmtService.listChannels(query));
   }
 
   @PostMapping("/channels")
-  public OutboundChannelResponse createChannel(@Validated @RequestBody OutboundChannelCreateRequest request) {
-    return integrationOutboundMgmtService.createChannel(request);
+  public Ret<OutboundChannelResponse> createChannel(@Validated @RequestBody OutboundChannelCreateRequest request) {
+    return Ret.data(integrationOutboundMgmtService.createChannel(request));
   }
 
   @GetMapping("/channels/{id}")
-  public OutboundChannelResponse getChannel(@PathVariable("id") Long id) {
-    return integrationOutboundMgmtService.getChannel(id);
+  public Ret<OutboundChannelResponse> getChannel(@PathVariable("id") Long id) {
+    return Ret.data(integrationOutboundMgmtService.getChannel(id));
   }
 
   @PutMapping("/channels/{id}")
-  public OutboundChannelResponse updateChannel(@PathVariable("id") Long id,
+  public Ret<OutboundChannelResponse> updateChannel(@PathVariable("id") Long id,
                                                @Validated @RequestBody OutboundChannelUpdateRequest request) {
-    return integrationOutboundMgmtService.updateChannel(id, request);
+    return Ret.data(integrationOutboundMgmtService.updateChannel(id, request));
   }
 
   @DeleteMapping("/channels/{id}")
-  public void deleteChannel(@PathVariable("id") Long id) {
+  public Ret<Void> deleteChannel(@PathVariable("id") Long id) {
     integrationOutboundMgmtService.deleteChannel(id);
+    return Ret.ok();
   }
 
   @PostMapping("/channels/{id}/test")
-  public TestWebhookResponse testChannel(@PathVariable("id") Long id) {
-    return integrationOutboundMgmtService.testChannel(id);
+  public Ret<TestWebhookResponse> testChannel(@PathVariable("id") Long id) {
+    return Ret.data(integrationOutboundMgmtService.testChannel(id));
   }
 
   @GetMapping("/subscriptions")
-  public OutboundSubscriptionPageResponse listSubscriptions(@ModelAttribute OutboundSubscriptionPageQuery query) {
-    return integrationOutboundMgmtService.listSubscriptions(query);
+  public Ret<OutboundSubscriptionPageResponse> listSubscriptions(@ModelAttribute OutboundSubscriptionPageQuery query) {
+    return Ret.data(integrationOutboundMgmtService.listSubscriptions(query));
   }
 
   @PostMapping("/subscriptions")
-  public OutboundSubscriptionResponse createSubscription(@Validated @RequestBody OutboundSubscriptionCreateRequest request) {
-    return integrationOutboundMgmtService.createSubscription(request);
+  public Ret<OutboundSubscriptionResponse> createSubscription(@Validated @RequestBody OutboundSubscriptionCreateRequest request) {
+    return Ret.data(integrationOutboundMgmtService.createSubscription(request));
   }
 
   @GetMapping("/subscriptions/{id}")
-  public OutboundSubscriptionResponse getSubscription(@PathVariable("id") Long id) {
-    return integrationOutboundMgmtService.getSubscription(id);
+  public Ret<OutboundSubscriptionResponse> getSubscription(@PathVariable("id") Long id) {
+    return Ret.data(integrationOutboundMgmtService.getSubscription(id));
   }
 
   @PutMapping("/subscriptions/{id}")
-  public OutboundSubscriptionResponse updateSubscription(@PathVariable("id") Long id,
+  public Ret<OutboundSubscriptionResponse> updateSubscription(@PathVariable("id") Long id,
                                                          @Validated @RequestBody OutboundSubscriptionUpdateRequest request) {
-    return integrationOutboundMgmtService.updateSubscription(id, request);
+    return Ret.data(integrationOutboundMgmtService.updateSubscription(id, request));
   }
 
   @DeleteMapping("/subscriptions/{id}")
-  public void deleteSubscription(@PathVariable("id") Long id) {
+  public Ret<Void> deleteSubscription(@PathVariable("id") Long id) {
     integrationOutboundMgmtService.deleteSubscription(id);
+    return Ret.ok();
   }
 
   @GetMapping("/deliveries")
-  public OutboundDeliveryPageResponse listDeliveries(@ModelAttribute OutboundDeliveryPageQuery query) {
-    return integrationOutboundMgmtService.listDeliveries(query);
+  public Ret<OutboundDeliveryPageResponse> listDeliveries(@ModelAttribute OutboundDeliveryPageQuery query) {
+    return Ret.data(integrationOutboundMgmtService.listDeliveries(query));
   }
 
   @PostMapping("/deliveries/{id}/retry")
-  public void retryDelivery(@PathVariable("id") Long id) {
+  public Ret<Void> retryDelivery(@PathVariable("id") Long id) {
     integrationOutboundMgmtService.retryDelivery(id);
+    return Ret.ok();
   }
 }

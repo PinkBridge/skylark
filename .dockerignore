@@ -6,3 +6,7 @@
 
 # Avoid copying prior local builds into the image.
 web/apps/*/dist
+
+# Host Maven output must not be COPY'd into service modules — stale mapper XML
+# and classes can break the in-container `mvn package` (orphans under target/classes).
+**/target
