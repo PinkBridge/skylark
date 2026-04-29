@@ -1,8 +1,8 @@
 package cn.skylark.aiot_service.iot.mgmt.service;
 
-import cn.skylark.aiot_service.appint.NormalizedEventPublisher;
-import cn.skylark.aiot_service.appint.model.IotIntegrationEventType;
-import cn.skylark.aiot_service.appint.model.NormalizedEvent;
+import cn.skylark.aiot_service.iot.appint.NormalizedEventPublisher;
+import cn.skylark.aiot_service.iot.appint.model.IotIntegrationEventType;
+import cn.skylark.aiot_service.iot.appint.model.NormalizedEvent;
 import cn.skylark.aiot_service.iot.access.mapper.AclPolicyMapper;
 import cn.skylark.aiot_service.iot.access.model.AclPolicyRecord;
 import cn.skylark.aiot_service.iot.mgmt.mapper.DeviceConnectRecordMapper;

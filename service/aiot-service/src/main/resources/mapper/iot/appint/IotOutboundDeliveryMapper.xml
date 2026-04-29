@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.skylark.aiot_service.iot.appint.mapper.IotOutboundDeliveryMapper">
+
+  <resultMap id="DeliveryMap" type="cn.skylark.aiot_service.iot.appint.entity.IotOutboundDeliveryEntity">
+    <id column="id" property="id"/>
+    <result column="tenant_id" property="tenantId"/>
+    <result column="org_id" property="orgId"/>
+    <result column="event_id" property="eventId"/>
+    <result column="event_type" property="eventType"/>
+    <result column="subscription_id" property="subscriptionId"/>
+    <result column="channel_id" property="channelId"/>
+    <result column="status" property="status"/>
+    <result column="attempts" property="attempts"/>
+    <result column="next_retry_at" property="nextRetryAt"/>
+    <result column="last_error" property="lastError"/>
+    <result column="http_status" property="httpStatus"/>
+    <result column="payload_snapshot" property="payloadSnapshot"/>
+    <result column="is_delete" property="isDelete"/>
+    <result column="create_user" property="createUser"/>
+    <result column="update_user" property="updateUser"/>
+    <result column="created_at" property="createdAt"/>
+    <result column="updated_at" property="updatedAt"/>
+  </resultMap>
+
+  <insert id="insert" parameterType="cn.skylark.aiot_service.iot.appint.entity.IotOutboundDeliveryEntity" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO iot_outbound_delivery(tenant_id, org_id, event_id, event_type, subscription_id, channel_id, status, attempts, next_retry_at, last_error, http_status, payload_snapshot, is_delete, created_at, updated_at)
+    VALUES (#{tenantId}, #{orgId}, #{eventId}, #{eventType}, #{subscriptionId}, #{channelId}, #{status}, #{attempts}, #{nextRetryAt}, #{lastError}, #{httpStatus}, #{payloadSnapshot}, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+  </insert>
+
+  <update id="update" parameterType="cn.skylark.aiot_service.iot.appint.entity.IotOutboundDeliveryEntity">
+    UPDATE iot_outbound_delivery
+    SET status = #{status},
+        attempts = #{attempts},
+        next_retry_at = #{nextRetryAt},
+        last_error = #{lastError},
+        http_status = #{httpStatus},
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = #{id}
+  </update>
+
+  <select id="findById" resultMap="DeliveryMap">
+    SELECT * FROM iot_outbound_delivery WHERE id = #{id} AND is_delete = 0 LIMIT 1
+  </select>
+
+  <select id="listPage" resultMap="DeliveryMap">
+    SELECT * FROM iot_outbound_delivery
+    WHERE is_delete = 0
+    ORDER BY id DESC
+    LIMIT #{pageSize} OFFSET #{offset}
+  </select>
+
+  <select id="countAll" resultType="long">
+    SELECT COUNT(*) FROM iot_outbound_delivery WHERE is_delete = 0
+  </select>
+
+  <select id="listDueRetry" resultMap="DeliveryMap">
+    SELECT * FROM iot_outbound_delivery
+    WHERE is_delete = 0
+      AND status = 'failed'
+      AND attempts &lt; #{maxAttempts}
+      AND (next_retry_at IS NULL OR next_retry_at &lt;= CURRENT_TIMESTAMP)
+    ORDER BY next_retry_at ASC, id ASC
+    LIMIT #{limit}
+  </select>
+</mapper>
