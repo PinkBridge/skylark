@@ -1,4 +1,4 @@
-package cn.skylark.aiot_service.appint.web;
+package cn.skylark.aiot_service.appint.controller;
 
 import cn.skylark.aiot_service.appint.dto.OutboundChannelCreateRequest;
 import cn.skylark.aiot_service.appint.dto.OutboundChannelPageQuery;
