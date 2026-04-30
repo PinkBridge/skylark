@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.skylark.aiot_service.iot.alarm.mapper.IotAlarmMapper">
+
+  <resultMap id="AlarmMap" type="cn.skylark.aiot_service.iot.alarm.entity.IotAlarmEntity">
+    <id column="id" property="id"/>
+    <result column="tenant_id" property="tenantId"/>
+    <result column="org_id" property="orgId"/>
+    <result column="rule_id" property="ruleId"/>
+    <result column="device_group_key" property="deviceGroupKey"/>
+    <result column="product_key" property="productKey"/>
+    <result column="device_key" property="deviceKey"/>
+    <result column="severity" property="severity"/>
+    <result column="status" property="status"/>
+    <result column="first_triggered_at" property="firstTriggeredAt"/>
+    <result column="last_triggered_at" property="lastTriggeredAt"/>
+    <result column="recovered_at" property="recoveredAt"/>
+    <result column="trigger_count" property="triggerCount"/>
+    <result column="evidence_json" property="evidenceJson"/>
+    <result column="last_event_id" property="lastEventId"/>
+    <result column="last_event_type" property="lastEventType"/>
+    <result column="is_delete" property="isDelete"/>
+    <result column="create_user" property="createUser"/>
+    <result column="update_user" property="updateUser"/>
+    <result column="created_at" property="createdAt"/>
+    <result column="updated_at" property="updatedAt"/>
+  </resultMap>
+
+  <insert id="insert" parameterType="cn.skylark.aiot_service.iot.alarm.entity.IotAlarmEntity" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO iot_alarm(
+      tenant_id, org_id, rule_id, device_group_key, product_key, device_key, severity, status,
+      first_triggered_at, last_triggered_at, recovered_at, trigger_count, evidence_json,
+      last_event_id, last_event_type, is_delete, created_at, updated_at, create_user, update_user
+    )
+    VALUES (
+      #{tenantId}, #{orgId}, #{ruleId}, #{deviceGroupKey}, #{productKey}, #{deviceKey}, #{severity}, #{status},
+      #{firstTriggeredAt}, #{lastTriggeredAt}, #{recoveredAt}, #{triggerCount}, #{evidenceJson},
+      #{lastEventId}, #{lastEventType}, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, #{createUser}, #{updateUser}
+    )
+  </insert>
+
+  <update id="update" parameterType="cn.skylark.aiot_service.iot.alarm.entity.IotAlarmEntity">
+    UPDATE iot_alarm
+    SET org_id = #{orgId},
+        severity = #{severity},
+        status = #{status},
+        first_triggered_at = #{firstTriggeredAt},
+        last_triggered_at = #{lastTriggeredAt},
+        recovered_at = #{recoveredAt},
+        trigger_count = #{triggerCount},
+        evidence_json = #{evidenceJson},
+        last_event_id = #{lastEventId},
+        last_event_type = #{lastEventType},
+        create_user = #{createUser},
+        update_user = #{updateUser},
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = #{id} AND is_delete = 0
+  </update>
+
+  <select id="findById" resultMap="AlarmMap">
+    SELECT * FROM iot_alarm WHERE id = #{id} AND is_delete = 0 LIMIT 1
+  </select>
+
+  <select id="findActiveByRuleAndDevice" resultMap="AlarmMap">
+    SELECT *
+    FROM iot_alarm
+    WHERE tenant_id = #{tenantId}
+      AND rule_id = #{ruleId}
+      AND product_key = #{productKey}
+      AND device_key = #{deviceKey}
+      AND status = 'ACTIVE'
+      AND is_delete = 0
+    ORDER BY id DESC
+    LIMIT 1
+  </select>
+
+  <select id="listPage" resultMap="AlarmMap">
+    SELECT * FROM iot_alarm
+    WHERE is_delete = 0
+    <if test="deviceGroupKey != null and deviceGroupKey != ''">
+      AND device_group_key = #{deviceGroupKey}
+    </if>
+    <if test="ruleId != null">
+      AND rule_id = #{ruleId}
+    </if>
+    <if test="severity != null and severity != ''">
+      AND severity = #{severity}
+    </if>
+    <if test="status != null and status != ''">
+      AND status = #{status}
+    </if>
+    ORDER BY id DESC
+    LIMIT #{pageSize} OFFSET #{offset}
+  </select>
+
+  <select id="countPage" resultType="long">
+    SELECT COUNT(*) FROM iot_alarm
+    WHERE is_delete = 0
+    <if test="deviceGroupKey != null and deviceGroupKey != ''">
+      AND device_group_key = #{deviceGroupKey}
+    </if>
+    <if test="ruleId != null">
+      AND rule_id = #{ruleId}
+    </if>
+    <if test="severity != null and severity != ''">
+      AND severity = #{severity}
+    </if>
+    <if test="status != null and status != ''">
+      AND status = #{status}
+    </if>
+  </select>
+
+  <update id="softDeleteById">
+    UPDATE iot_alarm SET is_delete = 1, updated_at = CURRENT_TIMESTAMP WHERE id = #{id} AND is_delete = 0
+  </update>
+</mapper>
+

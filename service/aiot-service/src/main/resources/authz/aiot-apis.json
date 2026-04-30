@@ -58,7 +58,16 @@
     { "method": "PUT", "path": "/api/aiot-service/appint/subscriptions/**", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" },
     { "method": "DELETE", "path": "/api/aiot-service/appint/subscriptions/**", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" },
     { "method": "GET", "path": "/api/aiot-service/appint/deliveries", "permlabel": "iot.integration.detail", "moduleKey": "aiot.integration" },
-    { "method": "POST", "path": "/api/aiot-service/appint/deliveries/**/retry", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" }
+    { "method": "POST", "path": "/api/aiot-service/appint/deliveries/**/retry", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" },
+
+    { "method": "GET", "path": "/api/aiot-service/alarm/rules", "permlabel": "iot.alarm.detail", "moduleKey": "aiot.alarm" },
+    { "method": "POST", "path": "/api/aiot-service/alarm/rules", "permlabel": "iot.alarm.edit", "moduleKey": "aiot.alarm" },
+    { "method": "GET", "path": "/api/aiot-service/alarm/rules/**", "permlabel": "iot.alarm.detail", "moduleKey": "aiot.alarm" },
+    { "method": "PUT", "path": "/api/aiot-service/alarm/rules/**", "permlabel": "iot.alarm.edit", "moduleKey": "aiot.alarm" },
+    { "method": "DELETE", "path": "/api/aiot-service/alarm/rules/**", "permlabel": "iot.alarm.edit", "moduleKey": "aiot.alarm" },
+
+    { "method": "GET", "path": "/api/aiot-service/alarm/records", "permlabel": "iot.alarm.detail", "moduleKey": "aiot.alarm" },
+    { "method": "GET", "path": "/api/aiot-service/alarm/records/**", "permlabel": "iot.alarm.detail", "moduleKey": "aiot.alarm" }
   ]
 }
 

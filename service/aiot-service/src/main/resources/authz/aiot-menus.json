@@ -99,7 +99,21 @@
       "hidden": false,
       "moduleKey": "aiot.integration"
     },
-    { "permlabel": "iot.integration.edit", "parentPermlabel": "iot.integration.detail", "type": "button", "name": "配置编辑", "nameI18n": { "zh": "配置编辑", "en": "Edit integration" }, "path": "", "icon": null, "sort": 1, "hidden": true, "moduleKey": "aiot.integration" }
+    { "permlabel": "iot.integration.edit", "parentPermlabel": "iot.integration.detail", "type": "button", "name": "配置编辑", "nameI18n": { "zh": "配置编辑", "en": "Edit integration" }, "path": "", "icon": null, "sort": 1, "hidden": true, "moduleKey": "aiot.integration" },
+
+    {
+      "permlabel": "iot.alarm.detail",
+      "parentPermlabel": "iot.enablement.group",
+      "type": "menu",
+      "name": "告警管理",
+      "nameI18n": { "zh": "告警管理", "en": "Alarms" },
+      "path": "/iot/alarms",
+      "icon": "Bell",
+      "sort": 16,
+      "hidden": false,
+      "moduleKey": "aiot.alarm"
+    },
+    { "permlabel": "iot.alarm.edit", "parentPermlabel": "iot.alarm.detail", "type": "button", "name": "配置编辑", "nameI18n": { "zh": "配置编辑", "en": "Edit alarms" }, "path": "", "icon": null, "sort": 1, "hidden": true, "moduleKey": "aiot.alarm" }
   ]
 }
 

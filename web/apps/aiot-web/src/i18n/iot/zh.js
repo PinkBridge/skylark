@@ -8,6 +8,7 @@ export default {
   DeviceInformationTitle: '设备信息',
   DeviceGroupTitle: '设备分组',
   IntegrationMgmtTitle: '数据订阅',
+  AlarmMgmtTitle: '告警管理',
   DeviceDetailTitle: '设备详情',
   ThingModelTitle: '物模型',
   NotFoundTitle: '页面不存在',
@@ -339,6 +340,23 @@ export default {
   IntegrationEventTypesRequired: '请至少选择一种事件类型',
   IntegrationInvalidJson: 'JSON 格式无效',
   IntegrationTestOk: '测试投递成功',
-  IntegrationTestFail: '测试投递失败'
+  IntegrationTestFail: '测试投递失败',
+  AlarmRulesTab: '告警规则',
+  AlarmRecordsTab: '告警记录',
+  AlarmRulesEmpty: '暂无规则',
+  AlarmRecordsEmpty: '暂无记录',
+  AlarmSourceType: '告警源',
+  AlarmSeverity: '紧急程度',
+  AlarmTriggerMode: '触发方式',
+  AlarmDurationSeconds: '持续(秒)',
+  AlarmRecoveryMode: '恢复策略',
+  AlarmDedupMode: '去重策略',
+  AlarmConditionJson: '条件(JSON)',
+  AlarmConditionJsonPlaceholder: '属性示例：{"propertyKey":"temp","operator":"GT","threshold":{"value":30}}',
+  AlarmConditionJsonRequired: '请填写条件 JSON',
+  AlarmDeviceGroupRequired: '请选择设备组',
+  AlarmRuleId: '规则 ID',
+  AlarmLastTriggeredAt: '最近触发时间',
+  AlarmJson: 'JSON'
 }
 

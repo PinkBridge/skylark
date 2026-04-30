@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.skylark.aiot_service.iot.alarm.mapper.IotAlarmRuleMapper">
+
+  <resultMap id="RuleMap" type="cn.skylark.aiot_service.iot.alarm.entity.IotAlarmRuleEntity">
+    <id column="id" property="id"/>
+    <result column="tenant_id" property="tenantId"/>
+    <result column="org_id" property="orgId"/>
+    <result column="device_group_key" property="deviceGroupKey"/>
+    <result column="name" property="name"/>
+    <result column="source_type" property="sourceType"/>
+    <result column="severity" property="severity"/>
+    <result column="trigger_mode" property="triggerMode"/>
+    <result column="duration_seconds" property="durationSeconds"/>
+    <result column="recovery_mode" property="recoveryMode"/>
+    <result column="dedup_mode" property="dedupMode"/>
+    <result column="enabled" property="enabled"/>
+    <result column="condition_json" property="conditionJson"/>
+    <result column="is_delete" property="isDelete"/>
+    <result column="create_user" property="createUser"/>
+    <result column="update_user" property="updateUser"/>
+    <result column="created_at" property="createdAt"/>
+    <result column="updated_at" property="updatedAt"/>
+  </resultMap>
+
+  <insert id="insert" parameterType="cn.skylark.aiot_service.iot.alarm.entity.IotAlarmRuleEntity" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO iot_alarm_rule(
+      tenant_id, org_id, device_group_key, name, source_type, severity, trigger_mode, duration_seconds,
+      recovery_mode, dedup_mode, enabled, condition_json, is_delete, created_at, updated_at
+    )
+    VALUES (
+      #{tenantId}, #{orgId}, #{deviceGroupKey}, #{name}, #{sourceType}, #{severity}, #{triggerMode}, #{durationSeconds},
+      #{recoveryMode}, #{dedupMode}, #{enabled}, #{conditionJson}, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+    )
+  </insert>
+
+  <update id="update" parameterType="cn.skylark.aiot_service.iot.alarm.entity.IotAlarmRuleEntity">
+    UPDATE iot_alarm_rule
+    SET device_group_key = #{deviceGroupKey},
+        name = #{name},
+        source_type = #{sourceType},
+        severity = #{severity},
+        trigger_mode = #{triggerMode},
+        duration_seconds = #{durationSeconds},
+        recovery_mode = #{recoveryMode},
+        dedup_mode = #{dedupMode},
+        enabled = #{enabled},
+        condition_json = #{conditionJson},
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = #{id} AND is_delete = 0
+  </update>
+
+  <select id="findById" resultMap="RuleMap">
+    SELECT * FROM iot_alarm_rule WHERE id = #{id} AND is_delete = 0 LIMIT 1
+  </select>
+
+  <select id="listPage" resultMap="RuleMap">
+    SELECT * FROM iot_alarm_rule
+    WHERE is_delete = 0
+    <if test="deviceGroupKey != null and deviceGroupKey != ''">
+      AND device_group_key = #{deviceGroupKey}
+    </if>
+    <if test="enabled != null">
+      AND enabled = #{enabled}
+    </if>
+    ORDER BY id DESC
+    LIMIT #{pageSize} OFFSET #{offset}
+  </select>
+
+  <select id="countPage" resultType="long">
+    SELECT COUNT(*) FROM iot_alarm_rule
+    WHERE is_delete = 0
+    <if test="deviceGroupKey != null and deviceGroupKey != ''">
+      AND device_group_key = #{deviceGroupKey}
+    </if>
+    <if test="enabled != null">
+      AND enabled = #{enabled}
+    </if>
+  </select>
+
+  <select id="listEnabledByGroupKeys" resultMap="RuleMap">
+    SELECT * FROM iot_alarm_rule
+    WHERE is_delete = 0
+      AND enabled = 1
+      AND tenant_id = #{tenantId}
+      AND device_group_key IN
+      <foreach collection="groupKeys" item="gk" open="(" separator="," close=")">
+        #{gk}
+      </foreach>
+  </select>
+
+  <update id="softDeleteById">
+    UPDATE iot_alarm_rule SET is_delete = 1, updated_at = CURRENT_TIMESTAMP WHERE id = #{id} AND is_delete = 0
+  </update>
+</mapper>
+

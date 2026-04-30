@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.skylark.aiot_service.iot.alarm.mapper.IotAlarmEvalStateMapper">
+
+  <resultMap id="StateMap" type="cn.skylark.aiot_service.iot.alarm.entity.IotAlarmEvalStateEntity">
+    <id column="id" property="id"/>
+    <result column="tenant_id" property="tenantId"/>
+    <result column="org_id" property="orgId"/>
+    <result column="rule_id" property="ruleId"/>
+    <result column="device_group_key" property="deviceGroupKey"/>
+    <result column="product_key" property="productKey"/>
+    <result column="device_key" property="deviceKey"/>
+    <result column="condition_met_since" property="conditionMetSince"/>
+    <result column="last_seen_at" property="lastSeenAt"/>
+    <result column="is_delete" property="isDelete"/>
+    <result column="create_user" property="createUser"/>
+    <result column="update_user" property="updateUser"/>
+    <result column="created_at" property="createdAt"/>
+    <result column="updated_at" property="updatedAt"/>
+  </resultMap>
+
+  <insert id="insert" parameterType="cn.skylark.aiot_service.iot.alarm.entity.IotAlarmEvalStateEntity" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO iot_alarm_eval_state(
+      tenant_id, org_id, rule_id, device_group_key, product_key, device_key,
+      condition_met_since, last_seen_at, is_delete, created_at, updated_at, create_user, update_user
+    )
+    VALUES (
+      #{tenantId}, #{orgId}, #{ruleId}, #{deviceGroupKey}, #{productKey}, #{deviceKey},
+      #{conditionMetSince}, #{lastSeenAt}, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, #{createUser}, #{updateUser}
+    )
+  </insert>
+
+  <update id="update" parameterType="cn.skylark.aiot_service.iot.alarm.entity.IotAlarmEvalStateEntity">
+    UPDATE iot_alarm_eval_state
+    SET org_id = #{orgId},
+        device_group_key = #{deviceGroupKey},
+        condition_met_since = #{conditionMetSince},
+        last_seen_at = #{lastSeenAt},
+        create_user = #{createUser},
+        update_user = #{updateUser},
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = #{id} AND is_delete = 0
+  </update>
+
+  <select id="findByRuleAndDevice" resultMap="StateMap">
+    SELECT *
+    FROM iot_alarm_eval_state
+    WHERE tenant_id = #{tenantId}
+      AND rule_id = #{ruleId}
+      AND product_key = #{productKey}
+      AND device_key = #{deviceKey}
+      AND is_delete = 0
+    LIMIT 1
+  </select>
+
+  <update id="softDeleteById">
+    UPDATE iot_alarm_eval_state SET is_delete = 1, updated_at = CURRENT_TIMESTAMP WHERE id = #{id} AND is_delete = 0
+  </update>
+</mapper>
+

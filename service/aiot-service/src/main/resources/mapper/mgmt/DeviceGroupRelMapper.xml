@@ -93,6 +93,16 @@
       AND is_delete = 0
   </select>
 
+  <select id="listGroupKeysByDevice" resultType="string">
+    SELECT group_key
+    FROM iot_device_group_rel
+    WHERE tenant_id = #{tenantId}
+      AND product_key = #{productKey}
+      AND device_key = #{deviceKey}
+      AND is_delete = 0
+    ORDER BY created_at DESC, id DESC
+  </select>
+
   <resultMap id="DeviceGroupMemberCountMap" type="cn.skylark.aiot_service.iot.mgmt.model.dto.DeviceGroupMemberCount">
     <result column="gk" property="groupKey"/>
     <result column="cnt" property="memberCount"/>

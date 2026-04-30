@@ -131,6 +131,8 @@ services:
         JRE_IMAGE: ${JRE_IMAGE:-eclipse-temurin:17-jre-alpine}
     container_name: aiot-service
     restart: unless-stopped
+    ports:
+      - "9533:80"
     environment:
       - TZ=Asia/Shanghai
       - SERVER_PORT=80
@@ -147,6 +149,7 @@ services:
       - SKYLARK_AUTHZ_SYNC_FIXED_DELAY_MS=30000
       - SKYLARK_AUTHZ_IGNORE_PATHS_0=/actuator/**
       - SKYLARK_AUTHZ_IGNORE_PATHS_1=/api/aiot-service/public/**
+      - SKYLARK_AUTHZ_IGNORE_PATHS_2=/api/aiot-service/access/**
       - IOT_ACCESS_EMQX_BASE_URL=http://emqx:18083
       - IOT_ACCESS_EMQX_API_KEY=${EMQX_API_KEY:-}
       - IOT_ACCESS_EMQX_API_SECRET=${EMQX_API_SECRET:-}

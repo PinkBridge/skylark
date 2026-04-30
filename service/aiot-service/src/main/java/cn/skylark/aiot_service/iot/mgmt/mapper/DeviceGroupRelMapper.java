@@ -39,5 +39,9 @@ public interface DeviceGroupRelMapper {
                                      @Param("groupKey") String groupKey,
                                      @Param("productKey") String productKey,
                                      @Param("deviceKey") String deviceKey);
+
+  List<String> listGroupKeysByDevice(@Param("tenantId") Long tenantId,
+                                     @Param("productKey") String productKey,
+                                     @Param("deviceKey") String deviceKey);
 }
 

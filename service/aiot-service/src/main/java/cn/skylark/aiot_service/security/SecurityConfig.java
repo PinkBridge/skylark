@@ -32,6 +32,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         .authorizeRequests()
         .antMatchers("/actuator/**").permitAll()
         .antMatchers("/api/business-service/demo/**").permitAll()
+        .antMatchers("/api/aiot-service/access/**").permitAll()
         .anyRequest().authenticated();
   }
 }

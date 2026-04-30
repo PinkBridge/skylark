@@ -279,9 +279,6 @@
         <el-form-item :label="t('IntegrationFilterJson')">
           <el-input v-model="subForm.filterJson" type="textarea" :rows="3" :placeholder="t('IntegrationFilterJsonPlaceholder')" />
         </el-form-item>
-        <el-form-item :label="t('IntegrationTransformJson')">
-          <el-input v-model="subForm.transformJson" type="textarea" :rows="3" :placeholder="t('IntegrationTransformJsonPlaceholder')" />
-        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="subDialog.visible = false">{{ t('CancelButtonText') }}</el-button>
@@ -308,9 +305,6 @@
         </el-form-item>
         <el-form-item :label="t('IntegrationFilterJson')">
           <el-input :model-value="subDetail.filterJson || ''" type="textarea" :rows="3" readonly />
-        </el-form-item>
-        <el-form-item :label="t('IntegrationTransformJson')">
-          <el-input :model-value="subDetail.transformJson || ''" type="textarea" :rows="3" readonly />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -863,10 +857,6 @@ function resetSubForm() {
 async function submitSub() {
   await subFormRef.value?.validate?.()
   if (subForm.filterJson && !validateJson(subForm.filterJson)) {
-    ElMessage.error(t('IntegrationInvalidJson'))
-    return
-  }
-  if (subForm.transformJson && !validateJson(subForm.transformJson)) {
     ElMessage.error(t('IntegrationInvalidJson'))
     return
   }
