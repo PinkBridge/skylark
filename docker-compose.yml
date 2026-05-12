@@ -158,7 +158,7 @@ services:
       - IOT_ACCESS_AUTH_USE_DB=${IOT_ACCESS_AUTH_USE_DB:-true}
       - IOT_ACCESS_ACL_USE_DB=${IOT_ACCESS_ACL_USE_DB:-true}
       - IOT_ACCESS_WEBHOOK_ENABLED=${IOT_ACCESS_WEBHOOK_ENABLED:-true}
-      - IOT_ACCESS_WEBHOOK_SECRET=${IOT_ACCESS_WEBHOOK_SECRET:-}
+      - IOT_ACCESS_WEBHOOK_SECRET=${IOT_ACCESS_WEBHOOK_SECRET:-skylark-dev-webhook-secret}
     depends_on:
       mysql:
         condition: service_healthy
@@ -211,7 +211,7 @@ services:
       - EMQX_DASHBOARD_PASSWORD=${EMQX_DASHBOARD_PASSWORD:-public}
       - EMQX_SYSTEM_API_USERNAME=${EMQX_SYSTEM_API_USERNAME:-system}
       - SYSTEM_API_PASSWORD=${SYSTEM_API_PASSWORD:-}
-      - IOT_ACCESS_WEBHOOK_SECRET=${IOT_ACCESS_WEBHOOK_SECRET:-}
+      - IOT_ACCESS_WEBHOOK_SECRET=${IOT_ACCESS_WEBHOOK_SECRET:-skylark-dev-webhook-secret}
       - EMQX_HOST=http://emqx:18083
       - IOT_ACCESS_HOST=http://aiot-service:80
     volumes:

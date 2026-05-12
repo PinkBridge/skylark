@@ -6,7 +6,7 @@ import cn.skylark.aiot_service.iot.alarm.entity.IotAlarmRuleEntity;
 import cn.skylark.aiot_service.iot.alarm.mapper.IotAlarmEvalStateMapper;
 import cn.skylark.aiot_service.iot.alarm.mapper.IotAlarmMapper;
 import cn.skylark.aiot_service.iot.alarm.mapper.IotAlarmRuleMapper;
-import cn.skylark.aiot_service.iot.appint.OutboundDispatchService;
+import cn.skylark.aiot_service.iot.appint.NormalizedEventPublisher;
 import cn.skylark.aiot_service.iot.appint.model.NormalizedEvent;
 import cn.skylark.aiot_service.iot.mgmt.mapper.DeviceGroupRelMapper;
 import cn.skylark.aiot_service.iot.mgmt.mapper.DeviceMapper;
@@ -30,7 +30,7 @@ public class AlarmEvaluatorService {
   private final IotAlarmEvalStateMapper stateMapper;
   private final DeviceGroupRelMapper deviceGroupRelMapper;
   private final DeviceMapper deviceMapper;
-  private final OutboundDispatchService outboundDispatchService;
+  private final NormalizedEventPublisher normalizedEventPublisher;
   private final ObjectMapper objectMapper;
 
   public AlarmEvaluatorService(IotAlarmRuleMapper ruleMapper,
@@ -38,14 +38,14 @@ public class AlarmEvaluatorService {
                                IotAlarmEvalStateMapper stateMapper,
                                DeviceGroupRelMapper deviceGroupRelMapper,
                                DeviceMapper deviceMapper,
-                               OutboundDispatchService outboundDispatchService,
+                               NormalizedEventPublisher normalizedEventPublisher,
                                ObjectMapper objectMapper) {
     this.ruleMapper = ruleMapper;
     this.alarmMapper = alarmMapper;
     this.stateMapper = stateMapper;
     this.deviceGroupRelMapper = deviceGroupRelMapper;
     this.deviceMapper = deviceMapper;
-    this.outboundDispatchService = outboundDispatchService;
+    this.normalizedEventPublisher = normalizedEventPublisher;
     this.objectMapper = objectMapper;
   }
 
@@ -298,7 +298,7 @@ public class AlarmEvaluatorService {
         .subject(subject)
         .data(data)
         .build();
-    outboundDispatchService.dispatch(alarmEvent);
+    normalizedEventPublisher.publish(alarmEvent);
   }
 
   private PropertyEvalResult evalProperty(String conditionJson, NormalizedEvent event) {

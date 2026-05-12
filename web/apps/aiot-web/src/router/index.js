@@ -59,6 +59,12 @@ const routes = [
         meta: { requiresAuth: true }
       },
       {
+        path: '/iot/notifications',
+        name: 'IotNotifications',
+        component: () => import('@/views/notification/NotificationConsole.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: '/iot/alarms',
         name: 'IotAlarms',
         component: () => import('@/views/alarm/AlarmConsole.vue'),

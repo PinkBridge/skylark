@@ -1,5 +1,8 @@
 package cn.skylark.aiot_service.iot.access.service;
 
+import cn.skylark.aiot_service.iot.access.mapper.AccessDeviceMapper;
+import cn.skylark.aiot_service.iot.access.model.AccessDeviceRecord;
+import cn.skylark.aiot_service.iot.access.model.DownstreamPublishRequest;
 import cn.skylark.aiot_service.iot.access.model.UpstreamIngestRequest;
 import cn.skylark.aiot_service.iot.appint.NormalizedEventPublisher;
 import cn.skylark.aiot_service.iot.appint.model.IotIntegrationEventType;
@@ -18,7 +21,9 @@ import org.springframework.util.StringUtils;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -26,13 +31,19 @@ public class UpstreamIngestServiceImpl implements UpstreamIngestService {
   private static final Logger log = LoggerFactory.getLogger(UpstreamIngestServiceImpl.class);
 
   private final DeviceRecordMapper deviceRecordMapper;
+  private final AccessDeviceMapper accessDeviceMapper;
+  private final EmqxManagementClient emqxManagementClient;
   private final ObjectMapper objectMapper;
   private final NormalizedEventPublisher normalizedEventPublisher;
 
   public UpstreamIngestServiceImpl(DeviceRecordMapper deviceRecordMapper,
+                                   AccessDeviceMapper accessDeviceMapper,
+                                   EmqxManagementClient emqxManagementClient,
                                    ObjectMapper objectMapper,
                                    NormalizedEventPublisher normalizedEventPublisher) {
     this.deviceRecordMapper = deviceRecordMapper;
+    this.accessDeviceMapper = accessDeviceMapper;
+    this.emqxManagementClient = emqxManagementClient;
     this.objectMapper = objectMapper;
     this.normalizedEventPublisher = normalizedEventPublisher;
   }
@@ -53,17 +64,25 @@ public class UpstreamIngestServiceImpl implements UpstreamIngestService {
     }
 
     Long tenantId = DataDomainContext.getTenantId();
+    Long orgId = DataDomainContext.getOrgId();
+    if (tenantId == null) {
+      tenantId = resolveTenantIdByDevice(d.productKey, d.deviceKey);
+      if (tenantId != null) {
+        log.info("iot.upstream resolved tenantId={} from device mapping, topic={}, traceId={}",
+            tenantId, topic, request.getTraceId());
+      }
+    }
     if (tenantId == null) {
       log.warn("iot.upstream ignored: missing tenantId, topic={}, traceId={}", topic, request.getTraceId());
       return;
     }
-    Long orgId = DataDomainContext.getOrgId();
 
     String payload = request.getPayload() == null ? "" : request.getPayload();
     long ts = request.getTimestamp() == null ? System.currentTimeMillis() : request.getTimestamp();
 
     if (d.type.equals("property_post")) {
       ingestPropertyPost(tenantId, orgId, d.productKey, d.deviceKey, topic, ts, request.getTraceId(), payload);
+      publishAlinkAck("PROPERTY_POST", null, null, topic, request.getTraceId(), extractMessageId(payload), true, null);
       return;
     }
     if (d.type.equals("event_post")) {
@@ -77,10 +96,11 @@ public class UpstreamIngestServiceImpl implements UpstreamIngestService {
       e.setMessageId(extractMessageId(payload));
       e.setTopic(topic);
       e.setDeviceTimestamp(ts);
-      e.setPayload(payload);
+      e.setPayload(extractEventOutputPayload(payload));
       deviceRecordMapper.insertEventRecord(e);
       publishThingEvent(tenantId, orgId, d.productKey, d.deviceKey, d.nameOrIdentifier, topic, ts,
           trimToNull(request.getTraceId()), payload);
+      publishAlinkAck("EVENT_POST", d.nameOrIdentifier, null, topic, request.getTraceId(), extractMessageId(payload), true, null);
       return;
     }
     if (d.type.equals("service_reply")) {
@@ -98,7 +118,8 @@ public class UpstreamIngestServiceImpl implements UpstreamIngestService {
       s.setPayload(payload);
       deviceRecordMapper.insertServiceRecord(s);
       publishServiceReply(tenantId, orgId, d.productKey, d.deviceKey, d.nameOrIdentifier, topic, ts,
-          trimToNull(request.getTraceId()), payload);
+          trimToNull(request.getTraceId()), extractMessageId(payload), payload);
+      publishAlinkAck("SERVICE_REPLY", null, d.nameOrIdentifier, topic, request.getTraceId(), extractMessageId(payload), true, null);
       return;
     }
 
@@ -217,12 +238,16 @@ public class UpstreamIngestServiceImpl implements UpstreamIngestService {
   }
 
   private void publishServiceReply(Long tenantId, Long orgId, String productKey, String deviceKey,
-                                   String serviceName, String topic, long ts, String traceId, String payload) {
+                                   String serviceName, String topic, long ts, String traceId, String messageId,
+                                   String payload) {
     Map<String, String> subject = new LinkedHashMap<String, String>();
     subject.put("productKey", productKey);
     subject.put("deviceKey", deviceKey);
     Map<String, Object> data = new LinkedHashMap<String, Object>();
     data.put("serviceName", serviceName);
+    if (StringUtils.hasText(messageId)) {
+      data.put("messageId", messageId);
+    }
     data.put("topic", topic);
     data.put("deviceTimestamp", ts);
     data.put("payload", payload);
@@ -281,6 +306,25 @@ public class UpstreamIngestServiceImpl implements UpstreamIngestService {
     return null;
   }
 
+  private String extractEventOutputPayload(String payload) {
+    if (!StringUtils.hasText(payload)) {
+      return payload;
+    }
+    try {
+      JsonNode root = objectMapper.readTree(payload);
+      JsonNode params = root.path("params");
+      if (params != null && !params.isMissingNode() && !params.isNull()) {
+        if (params.isValueNode()) {
+          return params.asText();
+        }
+        return objectMapper.writeValueAsString(params);
+      }
+    } catch (Exception ignore) {
+      // fallback to raw payload
+    }
+    return payload;
+  }
+
   private static class TopicDerived {
     final String productKey;
     final String deviceKey;
@@ -332,5 +376,113 @@ public class UpstreamIngestServiceImpl implements UpstreamIngestService {
     if (!StringUtils.hasText(s)) return null;
     String t = s.trim();
     return t.isEmpty() ? null : t;
+  }
+
+  private void publishAlinkAck(String eventType,
+                               String eventName,
+                               String serviceName,
+                               String originTopic,
+                               String traceId,
+                               String messageId,
+                               boolean success,
+                               String errorMessage) {
+    try {
+      String ackTopic = buildAckTopic(eventType, eventName, serviceName, originTopic);
+      if (!StringUtils.hasText(ackTopic)) {
+        return;
+      }
+      String ackMethod = buildAckMethod(eventType, eventName, serviceName);
+
+      String id = StringUtils.hasText(messageId) ? messageId.trim() : "0";
+      String message = success ? "success" : trimToNull(errorMessage);
+      if (!StringUtils.hasText(message)) {
+        message = success ? "success" : "invalid payload";
+      }
+
+      com.fasterxml.jackson.databind.node.ObjectNode root = objectMapper.createObjectNode();
+      root.put("id", id);
+      root.put("code", success ? 200 : 500);
+      root.put("message", message);
+      if (StringUtils.hasText(ackMethod)) {
+        root.put("method", ackMethod);
+      }
+      root.set("data", objectMapper.createObjectNode());
+
+      DownstreamPublishRequest req = new DownstreamPublishRequest();
+      req.setTraceId(trimToNull(traceId));
+      req.setTopic(ackTopic);
+      req.setPayload(root.toString());
+      req.setQos(1);
+      req.setRetain(false);
+      Optional<String> error = emqxManagementClient.publish(req);
+      if (error.isPresent()) {
+        log.warn("iot.upstream.ack failed traceId={} topic={} ackTopic={} err={}",
+            traceId, originTopic, ackTopic, error.get());
+      }
+    } catch (Exception ex) {
+      log.warn("iot.upstream.ack exception traceId={} topic={} err={}",
+          traceId, originTopic, ex.getMessage());
+    }
+  }
+
+  private static String buildAckTopic(String eventType, String eventName, String serviceName, String originTopic) {
+    String topic = safe(originTopic);
+    String lower = topic.toLowerCase();
+    if ("PROPERTY_POST".equals(eventType) && lower.endsWith("/thing/event/property/post")) {
+      return topic.substring(0, topic.length() - "/thing/event/property/post".length()) + "/thing/event/property/post_reply";
+    }
+    if ("EVENT_POST".equals(eventType) && StringUtils.hasText(eventName)) {
+      String suffix = "/thing/event/" + eventName + "/post";
+      if (lower.endsWith(suffix.toLowerCase())) {
+        return topic.substring(0, topic.length() - suffix.length()) + "/thing/event/" + eventName + "/post_reply";
+      }
+    }
+    if ("SERVICE_REPLY".equals(eventType) && StringUtils.hasText(serviceName)) {
+      String suffix = "/thing/service/" + serviceName + "/reply";
+      if (lower.endsWith(suffix.toLowerCase())) {
+        return topic.substring(0, topic.length() - suffix.length()) + "/thing/service/" + serviceName + "/reply_ack";
+      }
+    }
+    return null;
+  }
+
+  private static String buildAckMethod(String eventType, String eventName, String serviceName) {
+    if ("PROPERTY_POST".equals(eventType)) {
+      return "thing.event.property.post_reply";
+    }
+    if ("EVENT_POST".equals(eventType) && StringUtils.hasText(eventName)) {
+      return "thing.event." + eventName + ".post_reply";
+    }
+    if ("SERVICE_REPLY".equals(eventType) && StringUtils.hasText(serviceName)) {
+      return "thing.service." + serviceName + ".reply_ack";
+    }
+    return null;
+  }
+
+  private Long resolveTenantIdByDevice(String productKey, String deviceKey) {
+    try {
+      List<AccessDeviceRecord> candidates = accessDeviceMapper.findByDeviceKey(safe(deviceKey));
+      if (candidates == null || candidates.isEmpty()) {
+        return null;
+      }
+      for (AccessDeviceRecord item : candidates) {
+        if (item == null || item.getTenantId() == null) continue;
+        if (safe(item.getProductKey()).equals(safe(productKey))
+            && safe(item.getDeviceKey()).equals(safe(deviceKey))) {
+          return item.getTenantId();
+        }
+      }
+      for (AccessDeviceRecord item : candidates) {
+        if (item == null || item.getTenantId() == null) continue;
+        if (safe(item.getDeviceKey()).equals(safe(deviceKey))) {
+          return item.getTenantId();
+        }
+      }
+      return null;
+    } catch (Exception ex) {
+      log.warn("iot.upstream resolve tenantId failed, productKey={}, deviceKey={}, err={}",
+          productKey, deviceKey, ex.getMessage());
+      return null;
+    }
   }
 }

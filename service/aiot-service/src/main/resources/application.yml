@@ -72,6 +72,9 @@ skylark:
       - iot_alarm_rule
       - iot_alarm
       - iot_alarm_eval_state
+      - iot_notification_channel
+      - iot_notification_subscription
+      - iot_notification_delivery
     auto-fill-audit-fields: true
     audit:
       create-user-column: create_user

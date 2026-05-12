@@ -28,9 +28,33 @@ public class AclMatcher {
     String t = topic.trim();
     if ("*".equals(p) || "#".equals(p)) return true;
     if (p.equals(t)) return true;
-    if (p.endsWith("/#")) {
-      String prefix = p.substring(0, p.length() - 2);
-      return t.equals(prefix) || t.startsWith(prefix + "/");
+    String[] pSeg = p.split("/", -1);
+    String[] tSeg = t.split("/", -1);
+    int i = 0;
+    int j = 0;
+    while (i < pSeg.length && j < tSeg.length) {
+      String token = pSeg[i];
+      if ("#".equals(token)) {
+        // MQTT '#': match current and all remaining levels.
+        return i == pSeg.length - 1;
+      }
+      if ("+".equals(token)) {
+        // MQTT '+': match exactly one level.
+        i++;
+        j++;
+        continue;
+      }
+      if (!token.equals(tSeg[j])) {
+        return false;
+      }
+      i++;
+      j++;
+    }
+    if (i == pSeg.length && j == tSeg.length) {
+      return true;
+    }
+    if (i == pSeg.length - 1 && "#".equals(pSeg[i])) {
+      return true;
     }
     return false;
   }

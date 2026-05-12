@@ -1,0 +1,2 @@
+# Shell scripts must use LF so Alpine/BusyBox sh in Docker does not see stray CR as invalid set(1) flags.
+*.sh text eol=lf

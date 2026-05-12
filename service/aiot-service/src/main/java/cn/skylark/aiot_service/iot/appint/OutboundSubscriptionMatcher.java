@@ -9,14 +9,14 @@ import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 
-final class OutboundSubscriptionMatcher {
+public final class OutboundSubscriptionMatcher {
   private OutboundSubscriptionMatcher() {}
 
-  static boolean matchOrg(OutboundDispatchRow row, NormalizedEvent event) {
+  public static boolean matchOrg(OutboundDispatchRow row, NormalizedEvent event) {
     return true;
   }
 
-  static boolean matchEventType(String eventTypesJson, String eventType, ObjectMapper mapper) {
+  public static boolean matchEventType(String eventTypesJson, String eventType, ObjectMapper mapper) {
     if (!StringUtils.hasText(eventTypesJson) || !StringUtils.hasText(eventType)) {
       return false;
     }
@@ -36,11 +36,11 @@ final class OutboundSubscriptionMatcher {
     }
   }
 
-  static boolean matchFilter(String filterJson, NormalizedEvent event, ObjectMapper mapper) {
+  public static boolean matchFilter(String filterJson, NormalizedEvent event, ObjectMapper mapper) {
     return matchFilter(filterJson, event, mapper, null);
   }
 
-  static boolean matchFilter(String filterJson,
+  public static boolean matchFilter(String filterJson,
                               NormalizedEvent event,
                               ObjectMapper mapper,
                               DeviceGroupRelMapper deviceGroupRelMapper) {

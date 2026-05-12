@@ -114,7 +114,13 @@ bridge_exists() {
 }
 
 if bridge_exists "iot-session-webhook"; then
-  echo "Bridge iot-session-webhook already present, skipping."
+  echo "Bridge iot-session-webhook already present, update config."
+  api "$TOKEN" -X PUT "$EMQX_HOST/api/v5/bridges/webhook:iot-session-webhook" -d "{
+    \"enable\": true,
+    \"url\": \"${IOT_ACCESS_HOST}/api/aiot-service/access/emqx/webhook/session\",
+    \"method\": \"post\",
+    \"headers\": $RES_HEADERS
+  }"
 else
   api "$TOKEN" -X POST "$EMQX_HOST/api/v5/bridges" -d "{
     \"type\": \"webhook\",
@@ -128,7 +134,15 @@ fi
 
 echo "==> EMQX init: create Webhook bridge for upstream ingest"
 if bridge_exists "iot-upstream-webhook"; then
-  echo "Bridge iot-upstream-webhook already present, skipping."
+  echo "Bridge iot-upstream-webhook already present, update config."
+  api "$TOKEN" -X PUT "$EMQX_HOST/api/v5/bridges/webhook:iot-upstream-webhook" -d "{
+    \"enable\": true,
+    \"url\": \"${IOT_ACCESS_HOST}/api/aiot-service/access/upstream\",
+    \"method\": \"post\",
+    \"headers\": {
+      \"Content-Type\": \"application/json\"
+    }
+  }"
 else
   api "$TOKEN" -X POST "$EMQX_HOST/api/v5/bridges" -d "{
     \"type\": \"webhook\",
