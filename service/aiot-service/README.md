@@ -1,6 +1,6 @@
 # aiot-service
 
-Skylark IoT 业务服务：设备与产品管理、上行接入（EMQX）、出站集成、告警与通知等能力；依赖 MySQL（Flyway 迁移）、可选接入权限服务做 RBAC。
+Skylark IoT 业务服务：设备与产品管理、上行接入（EMQX）、出站集成、告警等能力；依赖 MySQL（Flyway 迁移）、可选接入权限服务做 RBAC。
 
 ## 本地运行
 
@@ -31,7 +31,6 @@ mvn -q -f service/pom.xml -pl aiot-service spring-boot:run
 - **接入**：`/api/aiot-service/access/...`（设备上行、EMQX 相关）
 - **应用集成（出站）**：`/api/aiot-service/appint/...`
 - **告警**：`/api/aiot-service/alarm/...`
-- **通知**：`/api/aiot-service/notification/...`
 
 演示用探活（保留自模板）：
 
@@ -43,7 +42,7 @@ Actuator：`/actuator/health`、`/actuator/info`（参见 `management.endpoints`
 
 编辑 `src/main/resources/application.yml` 中的 `skylark.authz`、`skylark.datadomain`。本服务默认 `app-code: aiot-service`；关闭权限校验可将 `skylark.authz.enabled` 设为 `false`（开发环境）。
 
-租户与审计相关表名在 `skylark.datadomain.tenant-tables` 中维护（含 IoT 与通知等表）。
+租户与审计相关表名在 `skylark.datadomain.tenant-tables` 中维护（含 IoT 核心表与出站、告警等）。
 
 ## 前端
 

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.skylark.aiot_service.iot.alarm.mapper.IotAlarmNotifyDeliveryMapper">
+
+  <resultMap id="DelMap" type="cn.skylark.aiot_service.iot.alarm.entity.IotAlarmNotifyDeliveryEntity">
+    <id column="id" property="id"/>
+    <result column="tenant_id" property="tenantId"/>
+    <result column="org_id" property="orgId"/>
+    <result column="notify_config_id" property="notifyConfigId"/>
+    <result column="rule_id" property="ruleId"/>
+    <result column="alarm_event_id" property="alarmEventId"/>
+    <result column="alarm_event_type" property="alarmEventType"/>
+    <result column="channel" property="channel"/>
+    <result column="status" property="status"/>
+    <result column="vendor_code" property="vendorCode"/>
+    <result column="http_status" property="httpStatus"/>
+    <result column="error_message" property="errorMessage"/>
+    <result column="recipient_hint" property="recipientHint"/>
+    <result column="is_test" property="isTest"/>
+    <result column="is_delete" property="isDelete"/>
+    <result column="create_user" property="createUser"/>
+    <result column="update_user" property="updateUser"/>
+    <result column="created_at" property="createdAt"/>
+    <result column="updated_at" property="updatedAt"/>
+  </resultMap>
+
+  <insert id="insert" parameterType="cn.skylark.aiot_service.iot.alarm.entity.IotAlarmNotifyDeliveryEntity" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO iot_alarm_notify_delivery(
+      tenant_id, org_id, notify_config_id, rule_id, alarm_event_id, alarm_event_type, channel, status,
+      vendor_code, http_status, error_message, recipient_hint, is_test, is_delete, created_at, updated_at
+    )
+    VALUES (
+      #{tenantId}, #{orgId}, #{notifyConfigId}, #{ruleId}, #{alarmEventId}, #{alarmEventType}, #{channel}, #{status},
+      #{vendorCode}, #{httpStatus}, #{errorMessage}, #{recipientHint}, #{isTest}, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+    )
+  </insert>
+
+  <select id="listPage" resultMap="DelMap">
+    SELECT * FROM iot_alarm_notify_delivery
+    WHERE tenant_id = #{tenantId} AND is_delete = 0
+    <if test="ruleId != null">
+      AND rule_id = #{ruleId}
+    </if>
+    <if test="notifyConfigId != null">
+      AND notify_config_id = #{notifyConfigId}
+    </if>
+    <if test="channel != null and channel != ''">
+      AND channel = #{channel}
+    </if>
+    <if test="status != null and status != ''">
+      AND status = #{status}
+    </if>
+    ORDER BY id DESC
+    LIMIT #{pageSize} OFFSET #{offset}
+  </select>
+
+  <select id="countPage" resultType="long">
+    SELECT COUNT(*) FROM iot_alarm_notify_delivery
+    WHERE tenant_id = #{tenantId} AND is_delete = 0
+    <if test="ruleId != null">
+      AND rule_id = #{ruleId}
+    </if>
+    <if test="notifyConfigId != null">
+      AND notify_config_id = #{notifyConfigId}
+    </if>
+    <if test="channel != null and channel != ''">
+      AND channel = #{channel}
+    </if>
+    <if test="status != null and status != ''">
+      AND status = #{status}
+    </if>
+  </select>
+</mapper>

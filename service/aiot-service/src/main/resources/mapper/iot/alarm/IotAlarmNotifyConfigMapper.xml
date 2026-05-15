@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.skylark.aiot_service.iot.alarm.mapper.IotAlarmNotifyConfigMapper">
+
+  <resultMap id="CfgMap" type="cn.skylark.aiot_service.iot.alarm.entity.IotAlarmNotifyConfigEntity">
+    <id column="id" property="id"/>
+    <result column="tenant_id" property="tenantId"/>
+    <result column="org_id" property="orgId"/>
+    <result column="rule_id" property="ruleId"/>
+    <result column="name" property="name"/>
+    <result column="remark" property="remark"/>
+    <result column="enabled" property="enabled"/>
+    <result column="email_enabled" property="emailEnabled"/>
+    <result column="sms_enabled" property="smsEnabled"/>
+    <result column="email_notify_channel_id" property="emailNotifyChannelId"/>
+    <result column="sms_notify_channel_id" property="smsNotifyChannelId"/>
+    <result column="to_emails" property="toEmails"/>
+    <result column="to_mobiles" property="toMobiles"/>
+    <result column="is_delete" property="isDelete"/>
+    <result column="create_user" property="createUser"/>
+    <result column="update_user" property="updateUser"/>
+    <result column="created_at" property="createdAt"/>
+    <result column="updated_at" property="updatedAt"/>
+  </resultMap>
+
+  <insert id="insert" parameterType="cn.skylark.aiot_service.iot.alarm.entity.IotAlarmNotifyConfigEntity" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO iot_alarm_notify_config(
+      tenant_id, org_id, rule_id, name, remark, enabled, email_enabled, sms_enabled,
+      email_notify_channel_id, sms_notify_channel_id, to_emails, to_mobiles,
+      is_delete, created_at, updated_at
+    )
+    VALUES (
+      #{tenantId}, #{orgId}, #{ruleId}, #{name}, #{remark}, #{enabled}, #{emailEnabled}, #{smsEnabled},
+      #{emailNotifyChannelId}, #{smsNotifyChannelId}, #{toEmails}, #{toMobiles},
+      0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+    )
+  </insert>
+
+  <update id="update" parameterType="cn.skylark.aiot_service.iot.alarm.entity.IotAlarmNotifyConfigEntity">
+    UPDATE iot_alarm_notify_config
+    SET name = #{name},
+        remark = #{remark},
+        enabled = #{enabled},
+        email_enabled = #{emailEnabled},
+        sms_enabled = #{smsEnabled},
+        email_notify_channel_id = #{emailNotifyChannelId},
+        sms_notify_channel_id = #{smsNotifyChannelId},
+        to_emails = #{toEmails},
+        to_mobiles = #{toMobiles},
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = #{id} AND is_delete = 0
+  </update>
+
+  <update id="softDeleteById">
+    UPDATE iot_alarm_notify_config SET is_delete = 1, updated_at = CURRENT_TIMESTAMP
+    WHERE id = #{id} AND is_delete = 0
+  </update>
+
+  <select id="findById" resultMap="CfgMap">
+    SELECT * FROM iot_alarm_notify_config WHERE id = #{id} AND is_delete = 0 LIMIT 1
+  </select>
+
+  <select id="listByTenantAndRule" resultMap="CfgMap">
+    SELECT * FROM iot_alarm_notify_config
+    WHERE tenant_id = #{tenantId} AND rule_id = #{ruleId} AND is_delete = 0
+    <if test="enabledOnly != null and enabledOnly == 1">
+      AND enabled = 1
+    </if>
+    ORDER BY id ASC
+  </select>
+
+  <select id="listPage" resultMap="CfgMap">
+    SELECT * FROM iot_alarm_notify_config
+    WHERE tenant_id = #{tenantId} AND is_delete = 0
+    <if test="ruleId != null">
+      AND rule_id = #{ruleId}
+    </if>
+    ORDER BY id DESC
+    LIMIT #{pageSize} OFFSET #{offset}
+  </select>
+
+  <select id="countPage" resultType="long">
+    SELECT COUNT(*) FROM iot_alarm_notify_config
+    WHERE tenant_id = #{tenantId} AND is_delete = 0
+    <if test="ruleId != null">
+      AND rule_id = #{ruleId}
+    </if>
+  </select>
+</mapper>

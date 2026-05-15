@@ -12,23 +12,38 @@ import cn.skylark.aiot_service.iot.alarm.entity.IotAlarmEntity;
 import cn.skylark.aiot_service.iot.alarm.entity.IotAlarmRuleEntity;
 import cn.skylark.aiot_service.iot.alarm.mapper.IotAlarmMapper;
 import cn.skylark.aiot_service.iot.alarm.mapper.IotAlarmRuleMapper;
+import cn.skylark.aiot_service.iot.alarm.support.AlarmRecordTriggerFormatter;
+import cn.skylark.aiot_service.iot.mgmt.mapper.DeviceMapper;
+import cn.skylark.aiot_service.iot.mgmt.model.entity.DeviceEntity;
 import cn.skylark.aiot_service.iot.mgmt.service.AiotDataDomainSupport;
 import cn.skylark.aiot_service.iot.mgmt.service.MgmtException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Service
 public class AlarmMgmtService {
   private final IotAlarmRuleMapper ruleMapper;
   private final IotAlarmMapper alarmMapper;
+  private final DeviceMapper deviceMapper;
+  private final ObjectMapper objectMapper;
 
-  public AlarmMgmtService(IotAlarmRuleMapper ruleMapper, IotAlarmMapper alarmMapper) {
+  public AlarmMgmtService(IotAlarmRuleMapper ruleMapper,
+                          IotAlarmMapper alarmMapper,
+                          DeviceMapper deviceMapper,
+                          ObjectMapper objectMapper) {
     this.ruleMapper = ruleMapper;
     this.alarmMapper = alarmMapper;
+    this.deviceMapper = deviceMapper;
+    this.objectMapper = objectMapper;
   }
 
   public AlarmRulePageResponse listRules(AlarmRulePageQuery query) {
@@ -104,6 +119,39 @@ public class AlarmMgmtService {
     }
   }
 
+  public AlarmRecordResponse recoverRecordManually(Long alarmId) {
+    Long tenantId = AiotDataDomainSupport.requireTenantId();
+    IotAlarmEntity e = alarmMapper.findById(alarmId);
+    if (e == null) {
+      throw new MgmtException(HttpStatus.NOT_FOUND, "alarm not found");
+    }
+    if (e.getTenantId() != null && !e.getTenantId().equals(tenantId)) {
+      throw new MgmtException(HttpStatus.NOT_FOUND, "alarm not found");
+    }
+    String st = normalizeEnum(e.getStatus());
+    if (!"ACTIVE".equals(st)) {
+      throw new MgmtException(HttpStatus.BAD_REQUEST, "only ACTIVE alarm can be manually recovered");
+    }
+    IotAlarmRuleEntity rule = ruleMapper.findById(e.getRuleId());
+    if (rule == null) {
+      throw new MgmtException(HttpStatus.BAD_REQUEST, "rule not found");
+    }
+    if (rule.getTenantId() != null && !rule.getTenantId().equals(tenantId)) {
+      throw new MgmtException(HttpStatus.BAD_REQUEST, "rule not found");
+    }
+    String rm = normalizeEnum(rule.getRecoveryMode());
+    if (!"MANUAL".equals(rm)) {
+      throw new MgmtException(HttpStatus.BAD_REQUEST, "manual recover only allowed when rule recoveryMode is MANUAL");
+    }
+    LocalDateTime now = LocalDateTime.now(ZoneId.systemDefault());
+    e.setStatus("RECOVERED");
+    e.setRecoveredAt(now);
+    if (alarmMapper.update(e) == 0) {
+      throw new MgmtException(HttpStatus.NOT_FOUND, "alarm not found");
+    }
+    return getRecord(alarmId);
+  }
+
   public AlarmRecordPageResponse listRecords(AlarmRecordPageQuery query) {
     int pageNum = query.getPageNum() == null || query.getPageNum() < 1 ? 1 : query.getPageNum();
     int pageSize = query.getPageSize() == null || query.getPageSize() < 1 ? 20 : Math.min(query.getPageSize(), 100);
@@ -119,8 +167,10 @@ public class AlarmMgmtService {
     List<IotAlarmEntity> rows = alarmMapper.listPage(gk, ruleId, severity, status, offset, pageSize);
     List<AlarmRecordResponse> records = new ArrayList<AlarmRecordResponse>();
     if (rows != null) {
+      Map<Long, IotAlarmRuleEntity> ruleById = new HashMap<Long, IotAlarmRuleEntity>();
+      Map<String, String> deviceNameByPkDk = new HashMap<String, String>();
       for (IotAlarmEntity e : rows) {
-        records.add(toRecordResponse(e));
+        records.add(toRecordResponse(e, ruleById, deviceNameByPkDk));
       }
     }
     resp.setRecords(records);
@@ -130,7 +180,7 @@ public class AlarmMgmtService {
   public AlarmRecordResponse getRecord(Long id) {
     IotAlarmEntity e = alarmMapper.findById(id);
     if (e == null) throw new MgmtException(HttpStatus.NOT_FOUND, "alarm not found");
-    return toRecordResponse(e);
+    return toRecordResponse(e, new HashMap<Long, IotAlarmRuleEntity>(), new HashMap<String, String>());
   }
 
   private AlarmRuleResponse toRuleResponse(IotAlarmRuleEntity e) {
@@ -152,7 +202,9 @@ public class AlarmMgmtService {
     return r;
   }
 
-  private AlarmRecordResponse toRecordResponse(IotAlarmEntity e) {
+  private AlarmRecordResponse toRecordResponse(IotAlarmEntity e,
+                                               Map<Long, IotAlarmRuleEntity> ruleById,
+                                               Map<String, String> deviceNameByPkDk) {
     AlarmRecordResponse r = new AlarmRecordResponse();
     if (e == null) return r;
     r.setId(e.getId());
@@ -167,10 +219,57 @@ public class AlarmMgmtService {
     r.setRecoveredAt(e.getRecoveredAt());
     r.setTriggerCount(e.getTriggerCount());
     r.setEvidenceJson(e.getEvidenceJson());
+    r.setTriggerCondition(AlarmRecordTriggerFormatter.conditionSummary(objectMapper, e.getEvidenceJson()));
+    r.setTriggerValue(AlarmRecordTriggerFormatter.valueDisplay(objectMapper, e.getEvidenceJson(),
+        e.getLastEventType(), e.getLastEventId()));
     r.setLastEventId(e.getLastEventId());
     r.setLastEventType(e.getLastEventType());
     r.setCreatedAt(e.getCreatedAt());
+
+    IotAlarmRuleEntity rule = resolveRule(e.getRuleId(), ruleById);
+    if (rule != null && StringUtils.hasText(rule.getName())) {
+      r.setRuleName(rule.getName().trim());
+    } else {
+      r.setRuleName("");
+    }
+    if (rule != null && StringUtils.hasText(rule.getRecoveryMode())) {
+      r.setRuleRecoveryMode(rule.getRecoveryMode().trim().toUpperCase());
+    } else {
+      r.setRuleRecoveryMode("");
+    }
+    String deviceName = resolveDeviceName(e.getProductKey(), e.getDeviceKey(), deviceNameByPkDk);
+    r.setDeviceName(deviceName);
     return r;
+  }
+
+  private IotAlarmRuleEntity resolveRule(Long ruleId, Map<Long, IotAlarmRuleEntity> ruleById) {
+    if (ruleId == null) {
+      return null;
+    }
+    if (ruleById.containsKey(ruleId)) {
+      return ruleById.get(ruleId);
+    }
+    IotAlarmRuleEntity rule = ruleMapper.findById(ruleId);
+    ruleById.put(ruleId, rule);
+    return rule;
+  }
+
+  private static String deviceCacheKey(String productKey, String deviceKey) {
+    return (productKey == null ? "" : productKey) + "\0" + (deviceKey == null ? "" : deviceKey);
+  }
+
+  private String resolveDeviceName(String productKey, String deviceKey, Map<String, String> deviceNameByPkDk) {
+    if (!StringUtils.hasText(productKey) || !StringUtils.hasText(deviceKey)) {
+      return "";
+    }
+    String ck = deviceCacheKey(productKey, deviceKey);
+    if (deviceNameByPkDk.containsKey(ck)) {
+      return deviceNameByPkDk.get(ck);
+    }
+    DeviceEntity d = deviceMapper.findByPkAndDeviceKey(productKey.trim(), deviceKey.trim());
+    String name = d != null && StringUtils.hasText(d.getDeviceName()) ? d.getDeviceName().trim() : "";
+    deviceNameByPkDk.put(ck, name);
+    return name;
   }
 
   private static int normalizeDuration(String triggerMode, Integer durationSeconds) {

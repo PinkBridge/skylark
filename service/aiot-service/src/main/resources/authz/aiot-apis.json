@@ -62,21 +62,13 @@
     { "method": "GET", "path": "/api/aiot-service/appint/deliveries", "permlabel": "iot.integration.detail", "moduleKey": "aiot.integration" },
     { "method": "POST", "path": "/api/aiot-service/appint/deliveries/**/retry", "permlabel": "iot.integration.edit", "moduleKey": "aiot.integration" },
 
-    { "method": "GET", "path": "/api/aiot-service/notification/event-types", "permlabel": "iot.notification.detail", "moduleKey": "aiot.notification" },
-    { "method": "GET", "path": "/api/aiot-service/notification/channels", "permlabel": "iot.notification.detail", "moduleKey": "aiot.notification" },
-    { "method": "POST", "path": "/api/aiot-service/notification/channels", "permlabel": "iot.notification.edit", "moduleKey": "aiot.notification" },
-    { "method": "GET", "path": "/api/aiot-service/notification/channels/**", "permlabel": "iot.notification.detail", "moduleKey": "aiot.notification" },
-    { "method": "PUT", "path": "/api/aiot-service/notification/channels/**", "permlabel": "iot.notification.edit", "moduleKey": "aiot.notification" },
-    { "method": "DELETE", "path": "/api/aiot-service/notification/channels/**", "permlabel": "iot.notification.edit", "moduleKey": "aiot.notification" },
-    { "method": "POST", "path": "/api/aiot-service/notification/channels/**/test", "permlabel": "iot.notification.edit", "moduleKey": "aiot.notification" },
-    { "method": "GET", "path": "/api/aiot-service/notification/subscriptions", "permlabel": "iot.notification.detail", "moduleKey": "aiot.notification" },
-    { "method": "POST", "path": "/api/aiot-service/notification/subscriptions", "permlabel": "iot.notification.edit", "moduleKey": "aiot.notification" },
-    { "method": "GET", "path": "/api/aiot-service/notification/subscriptions/**", "permlabel": "iot.notification.detail", "moduleKey": "aiot.notification" },
-    { "method": "PUT", "path": "/api/aiot-service/notification/subscriptions/**", "permlabel": "iot.notification.edit", "moduleKey": "aiot.notification" },
-    { "method": "DELETE", "path": "/api/aiot-service/notification/subscriptions/**", "permlabel": "iot.notification.edit", "moduleKey": "aiot.notification" },
-    { "method": "GET", "path": "/api/aiot-service/notification/deliveries", "permlabel": "iot.notification.detail", "moduleKey": "aiot.notification" },
-    { "method": "GET", "path": "/api/aiot-service/notification/deliveries/**", "permlabel": "iot.notification.detail", "moduleKey": "aiot.notification" },
-    { "method": "POST", "path": "/api/aiot-service/notification/deliveries/**/retry", "permlabel": "iot.notification.edit", "moduleKey": "aiot.notification" },
+    { "method": "GET", "path": "/api/aiot-service/notify/channels", "permlabel": "iot.notify.detail", "moduleKey": "aiot.notify" },
+    { "method": "GET", "path": "/api/aiot-service/notify/channels/options", "permlabel": "iot.notify.detail", "moduleKey": "aiot.notify" },
+    { "method": "POST", "path": "/api/aiot-service/notify/channels", "permlabel": "iot.notify.edit", "moduleKey": "aiot.notify" },
+    { "method": "GET", "path": "/api/aiot-service/notify/channels/**", "permlabel": "iot.notify.detail", "moduleKey": "aiot.notify" },
+    { "method": "PUT", "path": "/api/aiot-service/notify/channels/**", "permlabel": "iot.notify.edit", "moduleKey": "aiot.notify" },
+    { "method": "DELETE", "path": "/api/aiot-service/notify/channels/**", "permlabel": "iot.notify.edit", "moduleKey": "aiot.notify" },
+    { "method": "POST", "path": "/api/aiot-service/notify/channels/**/test", "permlabel": "iot.notify.edit", "moduleKey": "aiot.notify" },
 
     { "method": "GET", "path": "/api/aiot-service/alarm/rules", "permlabel": "iot.alarm.detail", "moduleKey": "aiot.alarm" },
     { "method": "POST", "path": "/api/aiot-service/alarm/rules", "permlabel": "iot.alarm.edit", "moduleKey": "aiot.alarm" },
@@ -85,7 +77,16 @@
     { "method": "DELETE", "path": "/api/aiot-service/alarm/rules/**", "permlabel": "iot.alarm.edit", "moduleKey": "aiot.alarm" },
 
     { "method": "GET", "path": "/api/aiot-service/alarm/records", "permlabel": "iot.alarm.detail", "moduleKey": "aiot.alarm" },
-    { "method": "GET", "path": "/api/aiot-service/alarm/records/**", "permlabel": "iot.alarm.detail", "moduleKey": "aiot.alarm" }
+    { "method": "POST", "path": "/api/aiot-service/alarm/records/**/recover", "permlabel": "iot.alarm.edit", "moduleKey": "aiot.alarm" },
+    { "method": "GET", "path": "/api/aiot-service/alarm/records/**", "permlabel": "iot.alarm.detail", "moduleKey": "aiot.alarm" },
+
+    { "method": "GET", "path": "/api/aiot-service/alarm/notify-configs", "permlabel": "iot.alarm.detail", "moduleKey": "aiot.alarm" },
+    { "method": "POST", "path": "/api/aiot-service/alarm/notify-configs", "permlabel": "iot.alarm.edit", "moduleKey": "aiot.alarm" },
+    { "method": "GET", "path": "/api/aiot-service/alarm/notify-configs/**", "permlabel": "iot.alarm.detail", "moduleKey": "aiot.alarm" },
+    { "method": "PUT", "path": "/api/aiot-service/alarm/notify-configs/**", "permlabel": "iot.alarm.edit", "moduleKey": "aiot.alarm" },
+    { "method": "DELETE", "path": "/api/aiot-service/alarm/notify-configs/**", "permlabel": "iot.alarm.edit", "moduleKey": "aiot.alarm" },
+    { "method": "POST", "path": "/api/aiot-service/alarm/notify-configs/**/test", "permlabel": "iot.alarm.edit", "moduleKey": "aiot.alarm" },
+    { "method": "GET", "path": "/api/aiot-service/alarm/notify-deliveries", "permlabel": "iot.alarm.detail", "moduleKey": "aiot.alarm" }
   ]
 }
 

@@ -65,5 +65,10 @@ public class AlarmMgmtController {
   public Ret<AlarmRecordResponse> getRecord(@PathVariable("id") Long id) {
     return Ret.data(alarmMgmtService.getRecord(id));
   }
+
+  @PostMapping("/records/{id}/recover")
+  public Ret<AlarmRecordResponse> recoverRecord(@PathVariable("id") Long id) {
+    return Ret.data(alarmMgmtService.recoverRecordManually(id));
+  }
 }
 

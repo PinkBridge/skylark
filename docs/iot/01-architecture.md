@@ -6,7 +6,7 @@
 
 The IoT stack in this repository centers on three runtime components:
 
-- **`aiot-service`**: Spring Boot service combining **device access** (EMQX callbacks, upstream ingest) and **management** (products, devices, thing model, alarms, notifications, outbound integration).
+- **`aiot-service`**: Spring Boot service combining **device access** (EMQX callbacks, upstream ingest) and **management** (products, devices, thing model, alarms, outbound integration).
 - **EMQX**: MQTT broker; HTTP authentication/authorization callbacks to `aiot-service`; rules forward device publishes to the upstream webhook.
 - **MySQL**: stores products, devices, ACL policies, thing models, property/event/service records, and related tables (database name defaults to `skylark_aiot` for the IoT module).
 
@@ -31,7 +31,7 @@ Typical Compose layout: `aiot-service` resolves `emqx` and `mysql` by **Docker s
 
 #### 4. Management API
 
-- REST APIs under **`/api/aiot-service/mgmt/...`** (products, devices, groups, thing model, alarms, notifications, etc.) are protected by Skylark authz when enabled; use `aiot-web` or an authenticated client.
+- REST APIs under **`/api/aiot-service/mgmt/...`** (products, devices, groups, thing model, alarms, etc.) are protected by Skylark authz when enabled; use `aiot-web` or an authenticated client.
 
 ### Core data objects (conceptual)
 

@@ -16,6 +16,17 @@ export function createHasPermission(options) {
   let loaded = false
   let loadingPromise = null
   let permSet = new Set()
+  const listeners = new Set()
+
+  function notifyListeners() {
+    for (const fn of [...listeners]) {
+      try {
+        fn()
+      } catch {
+        /* ignore subscriber errors */
+      }
+    }
+  }
 
   async function ensureLoaded() {
     if (loaded) return
@@ -33,19 +44,24 @@ export function createHasPermission(options) {
         permSet = new Set(labels)
         loaded = true
       })
+      .catch(() => {
+        permSet = new Set()
+        loaded = true
+      })
       .finally(() => {
         loadingPromise = null
+        notifyListeners()
       })
     return loadingPromise
   }
 
-  return function hasPermission(permlabel) {
+  function hasPermission(permlabel) {
     if (!permlabel) return true
     if (typeof getAccessToken === 'function' && !getAccessToken()) {
       return false
     }
     if (!loaded) {
-      // fire-and-forget load to avoid blocking rendering
+      // fire-and-forget load; directive subscribers re-apply when load finishes
       ensureLoaded()
       return false
     }
@@ -54,6 +70,22 @@ export function createHasPermission(options) {
     }
     return permSet.has(permlabel)
   }
+
+  /** Re-run permission UI (e.g. v-permission) after async menu tree load completes. */
+  hasPermission.subscribe = (listener) => {
+    if (typeof listener !== 'function') return () => {}
+    listeners.add(listener)
+    if (loaded) {
+      try {
+        listener()
+      } catch {
+        /* ignore */
+      }
+    }
+    return () => listeners.delete(listener)
+  }
+
+  return hasPermission
 }
 
 export function createPermissionDirective(hasPermission) {
@@ -66,10 +98,18 @@ export function createPermissionDirective(hasPermission) {
   return {
     mounted(el, binding) {
       apply(el, binding)
+      if (hasPermission && typeof hasPermission.subscribe === 'function') {
+        el.__authzPermUnsub = hasPermission.subscribe(() => apply(el, binding))
+      }
     },
     updated(el, binding) {
       apply(el, binding)
+    },
+    unmounted(el) {
+      if (el.__authzPermUnsub) {
+        el.__authzPermUnsub()
+        delete el.__authzPermUnsub
+      }
     }
   }
 }
-

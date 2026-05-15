@@ -102,18 +102,18 @@
     { "permlabel": "iot.integration.edit", "parentPermlabel": "iot.integration.detail", "type": "button", "name": "配置编辑", "nameI18n": { "zh": "配置编辑", "en": "Edit integration" }, "path": "", "icon": null, "sort": 1, "hidden": true, "moduleKey": "aiot.integration" },
 
     {
-      "permlabel": "iot.notification.detail",
+      "permlabel": "iot.notify.detail",
       "parentPermlabel": "iot.enablement.group",
       "type": "menu",
-      "name": "消息订阅",
-      "nameI18n": { "zh": "消息订阅", "en": "Notifications" },
-      "path": "/iot/notifications",
+      "name": "通知设置",
+      "nameI18n": { "zh": "通知设置", "en": "Notification settings" },
+      "path": "/iot/notify-settings",
       "icon": "Message",
       "sort": 16,
       "hidden": false,
-      "moduleKey": "aiot.notification"
+      "moduleKey": "aiot.notify"
     },
-    { "permlabel": "iot.notification.edit", "parentPermlabel": "iot.notification.detail", "type": "button", "name": "配置编辑", "nameI18n": { "zh": "配置编辑", "en": "Edit notifications" }, "path": "", "icon": null, "sort": 1, "hidden": true, "moduleKey": "aiot.notification" },
+    { "permlabel": "iot.notify.edit", "parentPermlabel": "iot.notify.detail", "type": "button", "name": "配置编辑", "nameI18n": { "zh": "配置编辑", "en": "Edit notification settings" }, "path": "", "icon": null, "sort": 1, "hidden": true, "moduleKey": "aiot.notify" },
 
     {
       "permlabel": "iot.alarm.detail",

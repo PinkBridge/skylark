@@ -6,7 +6,7 @@
 
 本仓库物联网相关运行时主要包括三类组件：
 
-- **`aiot-service`**：Spring Boot 服务，同时承担**设备接入**（EMQX 回调、上行解析）与**管理面**（产品、设备、物模型、告警、通知、出站集成等）。
+- **`aiot-service`**：Spring Boot 服务，同时承担**设备接入**（EMQX 回调、上行解析）与**管理面**（产品、设备、物模型、告警、出站集成等）。
 - **EMQX**：MQTT Broker；通过 HTTP 回调做认证/鉴权；通过规则把设备上报转发到上行 Webhook。
 - **MySQL**：存储产品、设备、ACL、物模型、属性/事件/服务运行记录等（IoT 库名默认 **`skylark_aiot`**，以 `application.yml` / Compose 为准）。
 
